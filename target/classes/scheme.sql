@@ -12,7 +12,6 @@ CREATE TABLE Persona (
     dni INTEGER PRIMARY KEY UNIQUE,
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
-    edad INTEGER,
     nacimiento INTEGER,
     telefono INTEGER,
     direccion TEXT

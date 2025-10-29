@@ -1,10 +1,9 @@
 package com.is1.proyecto.models;
 
-import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 
 @Table("Docente")
-public class Docente extends Model {
+public class Docente extends Persona {
     // DNI
     public Integer getDNI() {
         return getInteger("dni"); // Obtiene el valor de la columna 'dni'
@@ -21,5 +20,14 @@ public class Docente extends Model {
 
     public void setCodigo(Integer codigo) {
         set("codigo_profesor", codigo); // Establece el valor para la columna 'codigo_profesor'
+    }
+
+    // Email
+        public String getEmail() {
+        return getString("email");
+    }
+
+    public void setEmail(String email) {
+        set("email", email);
     }
 }

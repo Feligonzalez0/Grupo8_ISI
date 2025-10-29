@@ -32,14 +32,6 @@ public class Persona extends Model {
         set("apellido", apellido);
     }
 
-    // Edad
-    public Integer getEdad() {
-        return getInteger("edad");
-    }
-
-    public void setEdad(Integer edad) {
-        set("edad", edad);
-    }
 
     // Nacimiento
     public Integer getNacimiento() {
