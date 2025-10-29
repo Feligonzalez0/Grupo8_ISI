@@ -20,13 +20,13 @@ CREATE TABLE Persona (
 
 CREATE TABLE Docente (
     dni INTEGER PRIMARY KEY UNIQUE,
-    codigo_profesor INTEGER AUTOINCREMENT,
+    codigo_profesor INTEGER ,
     CONSTRAINT fk_dni1 Docente(dni) REFERENCES Persona(dni)
 );
 
 CREATE TABLE Estudiante (
     dni INTEGER PRIMARY KEY UNIQUE,
-    nro_legajo INTEGER AUTOINCREMENT,
+    nro_legajo INTEGER,
     email TEXT NOT NULL,
     CONSTRAINT fk_dni2 Estudiante(dni) REFERENCES Persona(dni)
 );
@@ -48,7 +48,7 @@ create table PlanDeEstudios(
 );
 
 create table carrera(
-    codigo INTEGER PRIMARY KEY AUTOINCREMENT,
+    cod_carrera INTEGER PRIMARY KEY ,
     nombre TEXT,
     descripcion TEXT,
 );
