@@ -4,31 +4,51 @@ DROP TABLE IF EXISTS users;
 -- Crea la tabla 'users' con los campos originales, adaptados para SQLite
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, -- Clave primaria autoincremental para SQLite
-    name TEXT NOT NULL UNIQUE,          -- Nombre de usuario (TEXT es el tipo de cadena recomendado para SQLite), con restricción UNIQUE
-    password TEXT NOT NULL           -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
+    name TEXT NOT NULL UNIQUE,            -- Nombre de usuario (TEXT es el tipo de cadena recomendado para SQLite), con restricción UNIQUE
+    password TEXT NOT NULL                -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
+);
+
+CREATE TABLE Persona (
+    dni INTEGER PRIMARY KEY UNIQUE,
+    nombre TEXT NOT NULL,
+    apellido TEXT NOT NULL,
+    edad INTEGER,
+    nacimiento INTEGER,
+    telefono INTEGER,
+    direccion TEXT
+);
+
+CREATE TABLE Docente (
+    dni INTEGER PRIMARY KEY UNIQUE,
+    codigo_profesor INTEGER AUTOINCREMENT,
+    CONSTRAINT fk_dni1 Docente(dni) REFERENCES Persona(dni)
+);
+
+CREATE TABLE Estudiante (
+    dni INTEGER PRIMARY KEY UNIQUE,
+    nro_legajo INTEGER AUTOINCREMENT,
+    email TEXT NOT NULL,
+    CONSTRAINT fk_dni2 Estudiante(dni) REFERENCES Persona(dni)
 );
 
 create table Materia(
-    codigo  INT NOT NULL PRIMARY KEY,
+    codigo INTEGER NOT NULL PRIMARY KEY,
     nombre TEXT,
     descripcion TEXT,
-    cod_plan INTEGER not null,
-    constraint  fk  Materia(cod_plan) references Plan_De_Estudios(cod_plan)
+    cod_plan INTEGER NOT NULL,
+    CONSTRAINT fk_cod1 Materia(cod_plan) references PlanDeEstudios(cod_plan)
 );
 
-
-create table Plan_De_Estudios(
-   cod_plan INTEGER not null PRIMARY KEY,
-   año date,
-   vigencia INTEGER not null,
-   años_total INTEGER not null,
-   cantidad_materias_total INTEGER not null,
-
+create table PlanDeEstudios(
+   cod_plan INTEGER NOT NULL PRIMARY KEY,
+   año DATE,
+   vigencia INTEGER NOT NULL,
+   años_total INTEGER NOT NULL,
+   cantidad_materias_total INTEGER NOT NULL
 );
 
 create table carrera(
-    codigo  INT NOT NULL PRIMARY KEY,
+    codigo INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT,
     descripcion TEXT,
-
 );
