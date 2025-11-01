@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Crear Nuevo Docente</title>
+</head>
+<body>
+    <h1>Crear Nuevo Docente</h1>
+
+    <!-- Mensajes de éxito o error -->
+    {{#successMessage}}
+        <p style="color: green;">{{successMessage}}</p>
+    {{/successMessage}}
+    {{#errorMessage}}
+        <p style="color: red;">{{errorMessage}}</p>
+    {{/errorMessage}}
+
+    <form action="/docente/new" method="post">
+        <label for="dni">DNI:</label><br>
+        <input type="text" id="dni" name="dni" required><br><br>
+
+        <label for="nombre">Nombre:</label><br>
+        <input type="text" id="nombre" name="nombre" required><br><br>
+
+        <label for="apellido">Apellido:</label><br>
+        <input type="text" id="apellido" name="apellido" required><br><br>
+
+        <label for="codigo_profesor">Código Profesor:</label><br>
+        <input type="text" id="codigo_profesor" name="codigo_profesor" required><br><br>
+
+        <button type="submit">Agregar Docente</button>
+    </form>
+
+    <br>
+    <a href="/dashboard">Volver al Dashboard</a>
+</body>
+</html>
