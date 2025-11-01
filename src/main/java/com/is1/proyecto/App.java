@@ -1,24 +1,26 @@
 package com.is1.proyecto; // Define el paquete de la aplicación, debe coincidir con la estructura de carpetas.
 
 // Importaciones necesarias para la aplicación Spark
-import com.fasterxml.jackson.databind.ObjectMapper; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
-import static spark.Spark.*; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
+import java.util.HashMap; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
+import java.util.Map; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
 
-// Importaciones específicas para ActiveJDBC (ORM para la base de datos)
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contraseñas de forma segura.
 
-// Importaciones de Spark para renderizado de plantillas
-import spark.ModelAndView; // Representa un modelo de datos y el nombre de la vista a renderizar.
-import spark.template.mustache.MustacheTemplateEngine; // Motor de plantillas Mustache para Spark.
+import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
+import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
+import com.is1.proyecto.models.Persona;
+import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
 
-// Importaciones estándar de Java
-import java.util.HashMap; // Para crear mapas de datos (modelos para las plantillas).
-import java.util.Map; // Interfaz Map, utilizada para Map.of() o HashMap.
-
-// Importaciones de clases del proyecto
-import com.is1.proyecto.config.DBConfigSingleton; // Clase Singleton para la configuración de la base de datos.
-import com.is1.proyecto.models.User; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import spark.ModelAndView; // Clase Singleton para la configuración de la base de datos.
+import static spark.Spark.after;
+import static spark.Spark.before; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import static spark.Spark.get;
+import static spark.Spark.halt;
+import static spark.Spark.port;
+import static spark.Spark.post;
+import spark.template.mustache.MustacheTemplateEngine;
 
 
 /**
@@ -36,7 +38,7 @@ public class App {
      * Aquí se configuran todas las rutas y filtros de Spark.
      */
     public static void main(String[] args) {
-        port(8080); // Configura el puerto en el que la aplicación Spark escuchará las peticiones (por defecto es 4567).
+        port(4567); // Configura el puerto en el que la aplicación Spark escuchará las peticiones (por defecto es 4567).
 
         // Obtener la instancia única del singleton de configuración de la base de datos.
         DBConfigSingleton dbConfig = DBConfigSingleton.getInstance();
@@ -292,6 +294,49 @@ public class App {
                 return objectMapper.writeValueAsString(Map.of("error", "Error interno al registrar usuario: " + e.getMessage()));
             }
         });
+
+        post("/docente/new", (req, res) -> {
+            String nombre = req.queryParams("nombre");
+            String apellido = req.queryParams("apellido");
+            Integer dni = Integer.parseInt(req.queryParams("dni")); // Hacemos esto para parsear la string que devuelve queryParams con un Int
+            Integer codigoProfesor = Integer.parseInt(req.queryParams("codigo_profesor"));
+
+            // Validacion para que ningun campo declarado NO NULL quede con null
+            if (dni == null || nombre == null || apellido == null || codigoProfesor == null) {
+            res.status(400);
+            return "Todos los campos son requeridos";
+            }
+
+        try {
+            // Crear persona
+            Persona persona = new Persona(); // Creamos una nueva instancia;
+            persona.set("dni", dni);
+            persona.set("nombre", nombre);
+            persona.set("apellido", apellido);
+            persona.saveIt(); // Guardamos la nueva persona en su tabla
+
+            // Crear docente
+            Docente docente = new Docente();
+            docente.setDNI(dni);
+            docente.setCodigo(codigoProfesor);
+            docente.saveIt();
+
+            // Verificamos si la creacion fue exitosa
+            res.status(201); 
+            return "Docente agregado correctamente con DNI: " + dni;
+
+        } catch (Exception e) {
+            // Para registrar errores durante el manejo de la base de datos:
+            System.err.println("Error al registrar la cuenta: " + e.    getMessage());
+                    e.printStackTrace(); // Imprime el stack trace para depuración.
+
+            // Imprimir error interno del server
+            res.status(500);
+            return "Error al agregar docente: " + e.getMessage();
+        }
+        });
+
+
 
     } // Fin del método main
 } // Fin de la clase App
