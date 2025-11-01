@@ -12,7 +12,7 @@ CREATE TABLE Persona (
     dni INTEGER PRIMARY KEY UNIQUE,
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
-    nacimiento INTEGER,
+    fecha_nacimiento INTEGER,
     telefono INTEGER,
     direccion TEXT
 );
@@ -31,14 +31,14 @@ CREATE TABLE Estudiante (
 );
 
 create table Materia(
-    codigo INTEGER NOT NULL PRIMARY KEY,
+    cod_materia INTEGER NOT NULL PRIMARY KEY,
     nombre TEXT,
     descripcion TEXT,
     cod_plan INTEGER NOT NULL,
     CONSTRAINT fk_cod1 Materia(cod_plan) references PlanDeEstudio(cod_plan)
 );
 
-create table PlanDeEstudio(
+create table PlanDeEstudios(
    cod_plan INTEGER NOT NULL PRIMARY KEY,
    año DATE,
    vigencia INTEGER NOT NULL,

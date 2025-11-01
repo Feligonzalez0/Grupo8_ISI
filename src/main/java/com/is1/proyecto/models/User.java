@@ -29,5 +29,4 @@ public class User extends Model {
     public void setPassword(String password) {
         set("password", password); // Establece el valor para la columna 'password'
     }
-
 }
