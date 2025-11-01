@@ -32,14 +32,13 @@ public class Persona extends Model {
         set("apellido", apellido);
     }
 
-
     // Nacimiento
-    public Integer getNacimiento() {
-        return getInteger("nacimiento");
+    public Integer getFechaNacimiento() {
+        return getInteger("fecha_nacimiento");
     }
 
-    public void setNacimiento(Integer nacimiento) {
-        set("nacimiento", nacimiento);
+    public void setFechaNacimiento(Integer fecha_nacimiento) {
+        set("fecha_nacimiento", fecha_nacimiento);
     }
 
     // Teléfono
@@ -58,5 +57,14 @@ public class Persona extends Model {
 
     public void setDireccion(String direccion) {
         set("direccion", direccion);
+    }
+
+    // Edad
+    public Integer getEdad() {
+        return getInteger("edad");
+    }
+
+    public void setEdad(Integer edad) {
+        set("edad", edad);
     }
 }

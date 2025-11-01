@@ -4,14 +4,14 @@ import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 
 @Table("Materia")
-public class Materia extends Model{
+public class Materia extends Model {
     // CODIGO
-    public Integer getCodigo() {
-        return getInteger("codigo");
+    public Integer getCodMateria() {
+        return getInteger("cod_materia");
     }
 
-    public void setCodigo(Integer codigo) {
-        set("codigo", codigo);
+    public void setCodMateria(Integer cod_materia) {
+        set("cod_materia", cod_materia);
     }
 
     // Nombre
