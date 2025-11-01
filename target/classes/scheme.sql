@@ -20,25 +20,17 @@ CREATE TABLE Persona (
 CREATE TABLE Docente (
     dni INTEGER PRIMARY KEY UNIQUE,
     codigo_profesor INTEGER NOT NULL,
-    CONSTRAINT fk_dni1 Docente(dni) REFERENCES Persona(dni)
+    CONSTRAINT fk_dni1 FOREIGN KEY (dni) REFERENCES Persona(dni)
 );
 
 CREATE TABLE Estudiante (
     dni INTEGER PRIMARY KEY UNIQUE,
     nro_legajo INTEGER NOT NULL,
     email TEXT NOT NULL,
-    CONSTRAINT fk_dni2 Estudiante(dni) REFERENCES Persona(dni)
+    CONSTRAINT fk_dni2 FOREIGN KEY (dni) REFERENCES Persona(dni)
 );
 
-create table Materia(
-    cod_materia INTEGER NOT NULL PRIMARY KEY,
-    nombre TEXT,
-    descripcion TEXT,
-    cod_plan INTEGER NOT NULL,
-    CONSTRAINT fk_cod1 Materia(cod_plan) references PlanDeEstudio(cod_plan)
-);
-
-create table PlanDeEstudios(
+CREATE TABLE PlanDeEstudios(
    cod_plan INTEGER NOT NULL PRIMARY KEY,
    año DATE,
    vigencia INTEGER NOT NULL,
@@ -46,7 +38,15 @@ create table PlanDeEstudios(
    cantidad_materias_total INTEGER NOT NULL
 );
 
-create table Carrera(
+CREATE TABLE Materia(
+    cod_materia INTEGER NOT NULL PRIMARY KEY,
+    nombre TEXT,
+    descripcion TEXT,
+    cod_plan INTEGER NOT NULL,
+    CONSTRAINT fk_cod_materia FOREIGN KEY (cod_plan) references PlanDeEstudio(cod_plan)
+);
+
+CREATE TABLE Carrera(
     cod_carrera INTEGER PRIMARY KEY,
     nombre TEXT,
     descripcion TEXT
