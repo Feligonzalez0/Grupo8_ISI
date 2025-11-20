@@ -38,8 +38,8 @@ public class App {
      * Aquí se configuran todas las rutas y filtros de Spark.
      */
     public static void main(String[] args) {
-        port(4567); // Configura el puerto en el que la aplicación Spark escuchará las peticiones
-                    // (por defecto es 4567).
+        port(8080); // Configura el puerto en el que la aplicación Spark escuchará las peticiones
+                    // (por defecto es 8080).
 
         // Obtener la instancia única del singleton de configuración de la base de
         // datos.
@@ -318,17 +318,19 @@ public class App {
         post("/docente/new", (req, res) -> {
             String nombre = req.queryParams("nombre");
             String apellido = req.queryParams("apellido");
-            Integer dni = Integer.parseInt(req.queryParams("dni")); // Hacemos esto para parsear la string que devuelve
-                                                                    // queryParams con un Int
-            Integer codigoProfesor = Integer.parseInt(req.queryParams("codigo_profesor"));
+            String dniString = req.queryParams("dni");
+            String codigoProfesorString = req.queryParams("codigo_profesor");
 
-            // Validacion para que ningun campo declarado NO NULL quede con null
-            if (dni == null || nombre == null || apellido == null || codigoProfesor == null) {
-                res.status(400);
-                return "Todos los campos son requeridos";
+            // Validacion para que ningun campo quede vacío
+            if (dniString.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || codigoProfesorString.isEmpty()) {
+                res.redirect("/agregarDocente?errorMessage=Todos los campos son requeridos");
+                return null;
             }
 
             try {
+                Integer codigoProfesor = Integer.parseInt(codigoProfesorString);
+                Integer dni = Integer.parseInt(dniString); // Hacemos esto para parsear la string que devuelve queryParams con un Int
+                
                 // Crear persona
                 Persona persona = new Persona(); // Creamos una nueva instancia;
                 persona.set("dni", dni);
@@ -342,35 +344,47 @@ public class App {
                 docente.setCodigo(codigoProfesor);
                 docente.saveIt();
 
-                // Verificamos si la creacion fue exitosa
-                res.status(201);
-                return "Docente agregado correctamente con DNI: " + dni;
+                res.redirect("/agregarDocente?successMessage=Docente agregado correctamente");
+                return null;
 
-            } catch (Exception e) {
-                // Para registrar errores durante el manejo de la base de datos:
-                System.err.println("Error al registrar la cuenta: " + e.getMessage());
-                e.printStackTrace(); // Imprime el stack trace para depuración.
-
-                // Imprimir error interno del server
-                res.status(500);
-                return "Error al agregar docente: " + e.getMessage();
+            }catch (NumberFormatException e) {
+                // Error al convertir DNI o código
+                res.redirect("/agregarDocente?errorMessage=DNI y Código Profesor deben ser números válidos");
+                return null;
+            }catch (Exception e) {
+                res.redirect("/agregarDocente?errorMessage=Error al agregar docente: " + e.getMessage());
+                return null;
             }
         });
 
         // Con esto podemos hacer localhost:puerto/agregarDocente
         get("/agregarDocente", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
+       
+            // Intenta obtener el nombre de usuario y la bandera de login de la sesión.
+            String currentUsername = req.session().attribute("currentUserUsername");
+            Boolean loggedIn = req.session().attribute("loggedIn");
+
+            // 1. Verificar si el usuario ha iniciado sesión.
+            // Si no hay un nombre de usuario en la sesión, la bandera es nula o falsa,
+            // significa que el usuario no está logueado o su sesión expiró.
+            if (currentUsername == null || loggedIn == null || !loggedIn) {
+                System.out.println("DEBUG: Acceso no autorizado a /dashboard. Redirigiendo a /login.");
+                // Redirige al login con un mensaje de error.
+                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                return null; // Importante retornar null después de una redirección.
+            }
 
             // Obtener y añadir mensaje de éxito de los query parameters (ej.
             // ?message=Cuenta creada!)
-            String successMessage = req.queryParams("message");
+            String successMessage = req.queryParams("successMessage");
             if (successMessage != null && !successMessage.isEmpty()) {
                 model.put("successMessage", successMessage);
             }
 
             // Obtener y añadir mensaje de error de los query parameters (ej. ?error=Campos
             // vacíos)
-            String errorMessage = req.queryParams("error");
+            String errorMessage = req.queryParams("errorMessage");
             if (errorMessage != null && !errorMessage.isEmpty()) {
                 model.put("errorMessage", errorMessage);
             }
