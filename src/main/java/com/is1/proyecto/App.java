@@ -6,6 +6,7 @@ import java.util.Map; // Importa los métodos estáticos principales de Spark (g
 
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contraseñas de forma segura.
+import org.sqlite.SQLiteException;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
@@ -352,7 +353,14 @@ public class App {
                 res.redirect("/agregarDocente?errorMessage=DNI y Codigo Profesor deben ser numeros validos");
                 return null;
             } catch (Exception e) {
-                res.redirect("/agregarDocente?errorMessage=Error al agregar docente: " + e.getMessage());
+                String msg = e.getMessage();
+                
+                if (msg != null && msg.contains("UNIQUE constraint failed: Persona.dni")){
+                    res.redirect("/agregarDocente?errorMessage=Ya existe una persona registrada con ese DNI.");
+                    return null;
+                }
+                
+                res.redirect("/agregarDocente?errorMessage=Error al agregar docente: " + msg);
                 return null;
             }
         });
