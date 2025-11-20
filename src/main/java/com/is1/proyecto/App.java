@@ -347,11 +347,11 @@ public class App {
                 res.redirect("/agregarDocente?successMessage=Docente agregado correctamente");
                 return null;
 
-            }catch (NumberFormatException e) {
+            } catch (NumberFormatException e) {
                 // Error al convertir DNI o código
-                res.redirect("/agregarDocente?errorMessage=DNI y Código Profesor deben ser números válidos");
+                res.redirect("/agregarDocente?errorMessage=DNI y Codigo Profesor deben ser numeros validos");
                 return null;
-            }catch (Exception e) {
+            } catch (Exception e) {
                 res.redirect("/agregarDocente?errorMessage=Error al agregar docente: " + e.getMessage());
                 return null;
             }
@@ -360,7 +360,7 @@ public class App {
         // Con esto podemos hacer localhost:puerto/agregarDocente
         get("/agregarDocente", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-       
+        
             // Intenta obtener el nombre de usuario y la bandera de login de la sesión.
             String currentUsername = req.session().attribute("currentUserUsername");
             Boolean loggedIn = req.session().attribute("loggedIn");
