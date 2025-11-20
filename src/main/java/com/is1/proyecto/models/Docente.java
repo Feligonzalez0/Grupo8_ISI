@@ -21,4 +21,13 @@ public class Docente extends Persona {
     public void setCodigo(Integer codigo) {
         set("codigo_profesor", codigo); // Establece el valor para la columna 'codigo_profesor'
     }
+
+    // EMAIL
+    public String getEmail() {
+        return getString("email");
+    }
+
+    public void setEmail(String email) {
+        set("email", email);
+    }
 }

@@ -20,6 +20,7 @@ CREATE TABLE Persona (
 CREATE TABLE Docente (
     dni INTEGER PRIMARY KEY UNIQUE,
     codigo_profesor INTEGER NOT NULL,
+    email TEXT,
     CONSTRAINT fk_dni1 FOREIGN KEY (dni) REFERENCES Persona(dni)
 );
 

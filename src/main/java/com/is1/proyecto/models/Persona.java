@@ -58,13 +58,4 @@ public class Persona extends Model {
     public void setDireccion(String direccion) {
         set("direccion", direccion);
     }
-
-    // Edad
-    public Integer getEdad() {
-        return getInteger("edad");
-    }
-
-    public void setEdad(Integer edad) {
-        set("edad", edad);
-    }
 }

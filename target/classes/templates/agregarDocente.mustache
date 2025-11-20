@@ -24,7 +24,6 @@
         {{/errorMessage}}
 
         <form action="/docente/new" method="post" class="space-y-4">
-
             <div>
                 <label for="dni" class="block text-gray-700 font-medium">DNI</label>
                 <input 
@@ -35,7 +34,6 @@
                     class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-400"
                 >
             </div>
-
             <div>
                 <label for="nombre" class="block text-gray-700 font-medium">Nombre</label>
                 <input 
@@ -46,7 +44,6 @@
                     class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-400"
                 >
             </div>
-
             <div>
                 <label for="apellido" class="block text-gray-700 font-medium">Apellido</label>
                 <input 
@@ -57,7 +54,6 @@
                     class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-400"
                 >
             </div>
-
             <div>
                 <label for="codigo_profesor" class="block text-gray-700 font-medium">Código Profesor</label>
                 <input 
@@ -68,23 +64,28 @@
                     class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-400"
                 >
             </div>
-
+            <div>
+                <label for="email" class="block text-gray-700 font-medium">Email</label>
+                <input 
+                    type="email" 
+                    id="email" 
+                    name="email"
+                    required
+                    class="w-full border border-gray-300 rounded p-2 focus:ring-2 focus:ring-blue-400"
+                >
+            </div>
             <button 
                 type="submit" 
                 class="w-full bg-purple-600 text-white py-2 rounded-lg hover:bg-purple-700 transition duration-300 font-semibold"
             >
                 Registrar Docente
             </button>
-
         </form>
-
         <div class="text-center mt-6">
             <a href="/dashboard" class="text-blue-600 hover:underline font-semibold">
                 Cancelar
             </a>
         </div>
-
     </div>
-
 </body>
 </html>

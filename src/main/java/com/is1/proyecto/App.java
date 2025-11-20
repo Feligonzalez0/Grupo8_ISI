@@ -6,7 +6,6 @@ import java.util.Map; // Importa los métodos estáticos principales de Spark (g
 
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contraseñas de forma segura.
-import org.sqlite.SQLiteException;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
@@ -321,10 +320,24 @@ public class App {
             String apellido = req.queryParams("apellido");
             String dniString = req.queryParams("dni");
             String codigoProfesorString = req.queryParams("codigo_profesor");
+            String email = req.queryParams("email");
 
             // Validacion para que ningun campo quede vacío
-            if (dniString.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || codigoProfesorString.isEmpty()) {
+            if (dniString.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || codigoProfesorString.isEmpty() || email.isEmpty()){
                 res.redirect("/agregarDocente?errorMessage=Todos los campos son requeridos");
+                return null;
+            }
+
+            // Validacion email valido:
+            if (!esEmailValido(email)){
+                res.redirect("/agregarDocente?errorMessage=Ingrese un email valido.");
+                return null;
+            }
+
+            // Validacion email no repetido:
+            Docente aux = Docente.findFirst("email = ?", email);
+            if (aux != null){
+                res.redirect("/agregarDocente?errorMessage=Ya existe un docente con ese email.");
                 return null;
             }
 
@@ -334,15 +347,16 @@ public class App {
                 
                 // Crear persona
                 Persona persona = new Persona(); // Creamos una nueva instancia;
-                persona.set("dni", dni);
-                persona.set("nombre", nombre);
-                persona.set("apellido", apellido);
+                persona.setDNI(dni);
+                persona.setNombre(nombre);
+                persona.setApellido(apellido);
                 persona.saveIt(); // Guardamos la nueva persona en su tabla
 
                 // Crear docente
                 Docente docente = new Docente();
                 docente.setDNI(dni);
                 docente.setCodigo(codigoProfesor);
+                docente.setEmail(email);
                 docente.saveIt();
 
                 res.redirect("/agregarDocente?successMessage=Docente agregado correctamente");
@@ -402,10 +416,17 @@ public class App {
             model.put("nombre", "");
             model.put("apellido", "");
             model.put("codigo_profesor", "");
+            model.put("email", "");
 
             // Renderizamos la plantilla
             return new ModelAndView(model, "agregarDocente.mustache");
         }, new MustacheTemplateEngine());
 
     } // Fin del método main
+
+    public static boolean esEmailValido(String email) {
+        String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
+        return email != null && email.matches(regex);
+    }
+
 } // Fin de la clase App
