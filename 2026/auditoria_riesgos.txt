@@ -1,6 +1,6 @@
 AUDITORIA DE RIESGOS - PROYECTO INTEGRADOR ING. SOFTWARE II
 
-ESCALA: Probabilidad: Alta / Media / Baja Impacto: Alto / Medio / Bajo
+Analisis Realizado por la LLM:
 
   ------------------
   RIESGOS TECNICOS
@@ -27,6 +27,7 @@ ESCALA: Probabilidad: Alta / Media / Baja Impacto: Alto / Medio / Bajo
 
 2.  Trabajo centrado en clase Probabilidad: Alta Impacto: Medio
     Descripcion: Bajo tiempo efectivo de desarrollo.
+anejo manual de base de datos, mayor complejidad y errores.
 
 3.  Comunicacion informal Probabilidad: Media Impacto: Medio
     Descripcion: Posibles malentendidos y descoordinacion.
@@ -72,3 +73,25 @@ ESCALA: Probabilidad: Alta / Media / Baja Impacto: Alto / Medio / Bajo
 -   Falta de roles definidos
 -   Complejidad del dominio
 -   Uso de JDBC
+
+Analisis Realizado por el equipo:
+
+Mala division de tareas, de tipo Planificacion, Probabilidad Alta, Impacto Alto
+
+Falta de tiempo por trabajos de otras materias, de tipo Planificacion, Probabilidad Media, Impacto Alto
+
+Mala distribucion del tiempo para realizacion de las tareas, de tipo Planificacion, Probabilidad Alta, Impacto Alto
+
+Cambio de algun requisito a mitad del proyecto, de tipo Organizacional, Probabilidad Media, Impacto Medio
+
+Un integrante no realiza su parte del trabajo o alguna de sus tareas, de tipo Humano, Probabilidad Baja, Impacto Alto
+
+Uso de una tecnologia la cual no se tiene conocimiento, de tipo Tecnico, Probabilidad Media, Impacto Medio
+
+Para poder resolver o minimizar su impacto de la mayoria de estos riesgos se requerira dejar en claro que, como y cuando se quiere hacer o implementar cada funcionalidad. En lo posible, dividir las tareas en microtareas para poder realizarlas durante la semana ya que el tiempo para hacerlas se disminuye y con ello podemos hacer un seguimiento del proyecto y trabajar sobre èl de manera conjunta o paralela con los demas trabajos de las demas materias.
+En cuanto a la ultimo riesgo, el utilizar tecnologias nuevas requiere estudiarlas bien y leer los manuales correspondientes para hacer un buen uso de ellas y que su uso no retrase el proyecto.
+
+Actividad 2.C
+
+Los riesgos encontrados por la IA son mas tecnicos y completos, mientras que los definidos por nosotros son màs puntuales y realistas de acuerdo al proyecto y al contexto academico. La LLM se centra en aspectos tecnicos de las tecnologias que utilizamos mientras que nosotros no los tuvimos en cuenta por falta de conocimiento.
+
