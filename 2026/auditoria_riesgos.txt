@@ -1,0 +1,74 @@
+AUDITORIA DE RIESGOS - PROYECTO INTEGRADOR ING. SOFTWARE II
+
+ESCALA: Probabilidad: Alta / Media / Baja Impacto: Alto / Medio / Bajo
+
+  ------------------
+  RIESGOS TECNICOS
+  ------------------
+
+1.  Integracion con JDBC Probabilidad: Alta Impacto: Alto Descripcion:
+    Manejo manual de base de datos, mayor complejidad y errores.
+
+2.  Arquitectura (Spark Java + Mustache) Probabilidad: Media Impacto:
+    Alto Descripcion: Limitaciones de escalabilidad y mantenimiento.
+
+3.  Falta de pruebas completas Probabilidad: Alta Impacto: Medio
+    Descripcion: No hay estrategia de testing definida.
+
+4.  Complejidad del dominio academico Probabilidad: Alta Impacto: Alto
+    Descripcion: Manejo de correlatividades, estados y reglas complejas.
+
+  --------------------------
+  RIESGOS ORGANIZACIONALES
+  --------------------------
+
+1.  Falta de roles definidos Probabilidad: Alta Impacto: Alto
+    Descripcion: Puede generar desorganizacion y trabajo ineficiente.
+
+2.  Trabajo centrado en clase Probabilidad: Alta Impacto: Medio
+    Descripcion: Bajo tiempo efectivo de desarrollo.
+
+3.  Comunicacion informal Probabilidad: Media Impacto: Medio
+    Descripcion: Posibles malentendidos y descoordinacion.
+
+  --------------------------
+  RIESGOS DE PLANIFICACION
+  --------------------------
+
+1.  Alcance demasiado amplio Probabilidad: Alta Impacto: Alto
+    Descripcion: Sistema muy grande para un cuatrimestre.
+
+2.  Bajo avance actual Probabilidad: Alta Impacto: Alto Descripcion:
+    Solo una funcionalidad implementada.
+
+3.  Falta de backlog definido Probabilidad: Media Impacto: Alto
+    Descripcion: No hay priorizacion clara.
+
+4.  Falta de estimaciones Probabilidad: Alta Impacto: Medio Descripcion:
+    No se puede prever tiempos reales.
+
+  -----------------
+  RIESGOS HUMANOS
+  -----------------
+
+1.  Diferencias de conocimiento Probabilidad: Alta Impacto: Alto
+    Descripcion: Desbalance en el equipo.
+
+2.  Dependencia de personas clave Probabilidad: Media Impacto: Alto
+    Descripcion: Riesgo si alguien no participa.
+
+3.  Falta de compromiso Probabilidad: Media Impacto: Alto Descripcion:
+    Problemas tipicos de trabajo grupal.
+
+4.  Sobrecarga academica Probabilidad: Alta Impacto: Medio Descripcion:
+    Otras materias afectan el avance.
+
+  -----------------
+  RESUMEN CRITICO
+  -----------------
+
+-   Alcance demasiado grande
+-   Bajo avance actual
+-   Falta de roles definidos
+-   Complejidad del dominio
+-   Uso de JDBC
