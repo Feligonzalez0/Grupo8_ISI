@@ -51,7 +51,9 @@ public class App {
             try {
                 // Abre una conexión a la base de datos utilizando las credenciales del
                 // singleton.
-                Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
+                if(!Base.hasConnection()) {
+                    Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
+                }   
                 System.out.println(req.url());
 
             } catch (Exception e) {
@@ -121,10 +123,15 @@ public class App {
                 return null; // Importante retornar null después de una redirección.
             }
 
+            String userRol = req.session().attribute("userRol"); // Obtiene el rol del usuario
             // 2. Si el usuario está logueado, añade el nombre de usuario al modelo para la
             // plantilla.
             model.put("username", currentUsername);
-
+            model.put("userRol", userRol);
+            model.put("isAdmin",   "ADMINISTRADOR".equals(userRol));
+            model.put("isDocente", "DOCENTE".equals(userRol));
+            model.put("isAlumno",  "ALUMNO".equals(userRol));
+            
             // 3. Renderiza la plantilla del dashboard con el nombre de usuario.
             return new ModelAndView(model, "dashboard.mustache");
         }, new MustacheTemplateEngine()); // Especifica el motor de plantillas para esta ruta.
@@ -195,6 +202,7 @@ public class App {
 
                 ac.set("name", name); // Asigna el nombre de usuario.
                 ac.set("password", hashedPassword); // Asigna la contraseña hasheada.
+                ac.set("rol", "ALUMNO"); // Asigna el rol por defecto a la nueva cuenta.
                 ac.saveIt(); // Guarda el nuevo usuario en la tabla 'users'.
 
                 res.status(201); // Código de estado HTTP 201 (Created) para una creación exitosa.
@@ -251,18 +259,16 @@ public class App {
                 res.status(200); // OK.
 
                 // --- Gestión de Sesión ---
-                req.session(true).attribute("currentUserUsername", username); // Guarda el nombre de usuario en la
-                                                                              // sesión.
+                req.session(true).attribute("currentUserUsername", username); // Guarda el nombre de usuario en la sesión.
                 req.session().attribute("userId", ac.getId()); // Guarda el ID de la cuenta en la sesión (útil).
-                req.session().attribute("loggedIn", true); // Establece una bandera para indicar que el usuario está
-                                                           // logueado.
+                req.session().attribute("userRol", ac.getRol()); // Guarda el rol del usuario.
+                req.session().attribute("loggedIn", true); // Establece una bandera para indicar que el usuario está logueado.
 
                 System.out.println("DEBUG: Login exitoso para la cuenta: " + username);
-                System.out.println("DEBUG: ID de Sesión: " + req.session().id());
+                System.out.println("DEBUG: ID de Sesion: " + req.session().id());
 
-                model.put("username", username); // Añade el nombre de usuario al modelo para el dashboard.
-                // Renderiza la plantilla del dashboard tras un login exitoso.
-                return new ModelAndView(model, "dashboard.mustache");
+                res.redirect("/dashboard"); 
+                return null;
             } else {
                 // Contraseña incorrecta.
                 res.status(401); // Unauthorized.
@@ -297,7 +303,8 @@ public class App {
                 // Se recomienda usar `BCrypt.hashpw(password, BCrypt.gensalt())` como en la
                 // ruta '/user/new').
                 newUser.set("name", name); // Asigna el nombre al campo 'name'.
-                newUser.set("password", password); // Asigna la contraseña al campo 'password'.
+                newUser.set("password", BCrypt.hashpw(password, BCrypt.gensalt())); // Asigna la contraseña al campo 'password'.
+                newUser.set("rol", "ALUMNO"); // Asigna el rol ALUMNO al nuevo usuario.
                 newUser.saveIt(); // Guarda el nuevo usuario en la tabla 'users'.
 
                 res.status(201); // Created.
@@ -391,10 +398,18 @@ public class App {
             // Si no hay un nombre de usuario en la sesión, la bandera es nula o falsa,
             // significa que el usuario no está logueado o su sesión expiró.
             if (currentUsername == null || loggedIn == null || !loggedIn) {
-                System.out.println("DEBUG: Acceso no autorizado a /dashboard. Redirigiendo a /login.");
+                System.out.println("DEBUG: Acceso no autorizado a /agregarDocente. Redirigiendo a /login.");
                 // Redirige al login con un mensaje de error.
                 res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
                 return null; // Importante retornar null después de una redirección.
+            }
+
+            // Verificar que el usuario sea administrador.
+            String userRol = req.session().attribute("userRol");
+            if (!"ADMINISTRADOR".equals(userRol)) {
+                System.out.println("DEBUG: Acceso denegado a /agregarDocente. Usuario no es admin.");
+                res.redirect("/dashboard?error=No tienes permisos para acceder a esta página.");
+                return null;
             }
 
             // Obtener y añadir mensaje de éxito de los query parameters (ej.

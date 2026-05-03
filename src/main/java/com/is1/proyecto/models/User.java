@@ -29,4 +29,24 @@ public class User extends Model {
     public void setPassword(String password) {
         set("password", password); // Establece el valor para la columna 'password'
     }
+
+    public String getRol() {
+        return getString("rol"); // Obtiene el valor de la columna 'role'
+    }
+
+    public void setRol(String rol) {
+        set("rol", rol); // Establece el valor para la columna 'role'
+    }
+
+    public boolean esAdmin()   { 
+        return "ADMINISTRADOR".equals(getRol()); 
+    }
+
+    public boolean esDocente() { 
+        return "DOCENTE".equals(getRol()); 
+    }
+
+    public boolean esAlumno()  { 
+        return "ALUMNO".equals(getRol()); 
+    }
 }

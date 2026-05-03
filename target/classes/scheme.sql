@@ -5,8 +5,13 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users (
     id INTEGER PRIMARY KEY AUTOINCREMENT, -- Clave primaria autoincremental para SQLite
     name TEXT NOT NULL UNIQUE,            -- Nombre de usuario (TEXT es el tipo de cadena recomendado para SQLite), con restricción UNIQUE
-    password TEXT NOT NULL                -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
+    password TEXT NOT NULL,                -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
+    rol TEXT NOT NULL DEFAULT 'ALUMNO' CHECK (rol IN ('ALUMNO', 'DOCENTE', 'ADMINISTRADOR')) -- Rol del usuario 
 );
+
+-- Administrador (contraseña '123') 
+INSERT INTO users (name, password, rol) VALUES
+  ('admin',  '$2a$12$AoKGRGy5pfvc9LVM2rhN6uJabTr/R9SV8rF9CsuePFuoskRa.9k9K', 'ADMINISTRADOR');
 
 CREATE TABLE Persona (
     dni INTEGER PRIMARY KEY UNIQUE,
@@ -44,7 +49,7 @@ CREATE TABLE Materia(
     nombre TEXT,
     descripcion TEXT,
     cod_plan INTEGER NOT NULL,
-    CONSTRAINT fk_cod_materia FOREIGN KEY (cod_plan) references PlanDeEstudio(cod_plan)
+    CONSTRAINT fk_cod_materia FOREIGN KEY (cod_plan) references PlanDeEstudios(cod_plan)
 );
 
 CREATE TABLE Carrera(
