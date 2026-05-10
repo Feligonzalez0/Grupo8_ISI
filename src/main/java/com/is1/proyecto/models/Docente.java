@@ -4,25 +4,22 @@ import org.javalite.activejdbc.annotations.Table;
 
 @Table("Docente")
 public class Docente extends Persona {
-    // DNI
     public Integer getDNI() {
-        return getInteger("dni"); // Obtiene el valor de la columna 'dni'
+        return getInteger("dni");
     }
 
     public void setDNI(Integer dni) {
-        set("dni", dni); // Establece el valor para la columna 'dni'
+        set("dni", dni);
     }
 
-    // CODIGO
     public Integer getCodigo() {
-        return getInteger("codigo_profesor"); // Obtiene el valor de la columna 'codigo_profesor'
+        return getInteger("codigo_profesor");
     }
 
     public void setCodigo(Integer codigo) {
-        set("codigo_profesor", codigo); // Establece el valor para la columna 'codigo_profesor'
+        set("codigo_profesor", codigo);
     }
 
-    // EMAIL
     public String getEmail() {
         return getString("email");
     }

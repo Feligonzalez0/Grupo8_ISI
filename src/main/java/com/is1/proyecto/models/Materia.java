@@ -5,7 +5,6 @@ import org.javalite.activejdbc.annotations.Table;
 
 @Table("Materia")
 public class Materia extends Model {
-    // CODIGO
     public Integer getCodMateria() {
         return getInteger("cod_materia");
     }
@@ -14,7 +13,6 @@ public class Materia extends Model {
         set("cod_materia", cod_materia);
     }
 
-    // Nombre
     public String getNombre() {
         return getString("nombre");
     }
@@ -23,7 +21,6 @@ public class Materia extends Model {
         set("nombre", nombre);
     }
 
-    // Descripcion
     public String getDescripcion() {
         return getString("descripcion");
     }

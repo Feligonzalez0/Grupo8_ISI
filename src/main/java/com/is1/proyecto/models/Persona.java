@@ -5,7 +5,6 @@ import org.javalite.activejdbc.annotations.Table;
 
 @Table("Persona")
 public class Persona extends Model {
-    // DNI
     public Integer getDNI() {
         return getInteger("dni");
     }
@@ -14,7 +13,6 @@ public class Persona extends Model {
         set("dni", dni);
     }
 
-    // Nombre
     public String getNombre() {
         return getString("nombre");
     }
@@ -23,7 +21,6 @@ public class Persona extends Model {
         set("nombre", nombre);
     }
 
-    // Apellido
     public String getApellido() {
         return getString("apellido");
     }
@@ -32,7 +29,6 @@ public class Persona extends Model {
         set("apellido", apellido);
     }
 
-    // Nacimiento
     public Integer getFechaNacimiento() {
         return getInteger("fecha_nacimiento");
     }
@@ -41,7 +37,6 @@ public class Persona extends Model {
         set("fecha_nacimiento", fecha_nacimiento);
     }
 
-    // Teléfono
     public Integer getTelefono() {
         return getInteger("telefono");
     }
@@ -50,7 +45,6 @@ public class Persona extends Model {
         set("telefono", telefono);
     }
 
-    // Dirección
     public String getDireccion() {
         return getString("direccion");
     }

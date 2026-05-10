@@ -7,20 +7,20 @@ import org.javalite.activejdbc.annotations.Table;
 public class Estudiante extends Persona{
 
   public Integer getDNI() {
-        return getInteger("dni"); // Obtiene el valor de la columna 'dni'
+        return getInteger("dni");
     }
 
     public void setDNI(Integer dni) {
-        set("dni", dni); // Establece el valor para la columna 'dni'
+        set("dni", dni);
     }
 
     // CODIGO
     public Integer getNroLeg() {
-        return getInteger("nro_legajo"); // Obtiene el valor de la columna "nro_legajo"
+        return getInteger("nro_legajo");
     }
 
     public void setNroLeg(Integer codigo) {
-        set("nro_legajo", codigo); // Establece el valor para la columna "nro_legajo"
+        set("nro_legajo", codigo);
     }
 
     // EMAIL
@@ -31,10 +31,4 @@ public class Estudiante extends Persona{
     public void setEmail(String email) {
         set("email", email);
     }
-
-
-
-
-
-
 }
