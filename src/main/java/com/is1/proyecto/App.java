@@ -367,7 +367,14 @@ public class App {
                 docente.setEmail(email);
                 docente.saveIt();
 
-                res.redirect("/agregarDocente?successMessage=Docente agregado correctamente");
+                // Crear usuario para el docente con DNI como usuario y contraseña
+                User usuarioDocente = new User();
+                usuarioDocente.set("name",     String.valueOf(dni));
+                usuarioDocente.set("password", BCrypt.hashpw(String.valueOf(dni), BCrypt.gensalt()));
+                usuarioDocente.set("rol",      "DOCENTE");
+                usuarioDocente.saveIt();
+
+                res.redirect("/agregarDocente?successMessage=Docente agregado correctamente.");
                 return null;
 
             } catch (NumberFormatException e) {
