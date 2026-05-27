@@ -1,58 +1,70 @@
 -- Elimina la tabla 'users' si ya existe para asegurar un inicio limpio
-DROP TABLE IF EXISTS users;
+-- DROP TABLE IF EXISTS users;
 
 -- Crea la tabla 'users' con los campos originales, adaptados para SQLite
-CREATE TABLE users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT, -- Clave primaria autoincremental para SQLite
-    name TEXT NOT NULL UNIQUE,            -- Nombre de usuario (TEXT es el tipo de cadena recomendado para SQLite), con restricción UNIQUE
-    password TEXT NOT NULL,                -- Contraseña hasheada (TEXT es el tipo de cadena recomendado para SQLite)
-    rol TEXT NOT NULL DEFAULT 'ALUMNO' CHECK (rol IN ('ALUMNO', 'DOCENTE', 'ADMINISTRADOR')) -- Rol del usuario 
+CREATE TABLE IF NOT EXISTS users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL UNIQUE,
+    password TEXT NOT NULL,
+    rol TEXT NOT NULL DEFAULT 'UNASSIGNED'
+        CHECK (rol IN ('ALUMNO', 'DOCENTE', 'ADMINISTRADOR', 'UNASSIGNED'))
 );
 
 -- Administrador (contraseña '123') 
-INSERT INTO users (name, password, rol) VALUES
-  ('admin',  '$2a$12$AoKGRGy5pfvc9LVM2rhN6uJabTr/R9SV8rF9CsuePFuoskRa.9k9K', 'ADMINISTRADOR');
+INSERT OR IGNORE INTO users (name, password, rol) VALUES (
+    'admin',
+    '$2a$12$AoKGRGy5pfvc9LVM2rhN6uJabTr/R9SV8rF9CsuePFuoskRa.9k9K',
+    'ADMINISTRADOR'
+);
 
-CREATE TABLE Persona (
-    dni INTEGER PRIMARY KEY UNIQUE,
+CREATE TABLE IF NOT EXISTS Persona (
+    dni INTEGER PRIMARY KEY,
     nombre TEXT NOT NULL,
     apellido TEXT NOT NULL,
-    fecha_nacimiento INTEGER,
-    telefono INTEGER,
+    fecha_nacimiento TEXT,
+    telefono TEXT,
     direccion TEXT
 );
 
-CREATE TABLE Docente (
-    dni INTEGER PRIMARY KEY UNIQUE,
-    codigo_profesor INTEGER NOT NULL,
+CREATE TABLE IF NOT EXISTS Docente (
+    dni INTEGER PRIMARY KEY,
+    codigo_profesor INTEGER NOT NULL UNIQUE,
     email TEXT,
-    CONSTRAINT fk_dni1 FOREIGN KEY (dni) REFERENCES Persona(dni)
+    user_id INTEGER UNIQUE,
+
+    FOREIGN KEY (dni) REFERENCES Persona(dni),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE Estudiante (
-    dni INTEGER PRIMARY KEY UNIQUE,
-    nro_legajo INTEGER NOT NULL,
+CREATE TABLE IF NOT EXISTS Estudiante (
+    dni INTEGER PRIMARY KEY,
+    nro_legajo INTEGER NOT NULL UNIQUE,
     email TEXT NOT NULL,
-    CONSTRAINT fk_dni2 FOREIGN KEY (dni) REFERENCES Persona(dni)
+    user_id INTEGER UNIQUE,
+
+    FOREIGN KEY (dni) REFERENCES Persona(dni),
+    FOREIGN KEY (user_id) REFERENCES users(id)
 );
 
-CREATE TABLE PlanDeEstudios(
-   cod_plan INTEGER NOT NULL PRIMARY KEY,
-   año DATE,
-   vigencia INTEGER NOT NULL,
-   años_total INTEGER NOT NULL,
-   cantidad_materias_total INTEGER NOT NULL
+CREATE TABLE IF NOT EXISTS PlanDeEstudios (
+    cod_plan INTEGER PRIMARY KEY,
+    año INTEGER,
+    vigencia INTEGER NOT NULL,
+    años_total INTEGER NOT NULL,
+    cantidad_materias_total INTEGER NOT NULL
 );
 
-CREATE TABLE Materia(
-    cod_materia INTEGER NOT NULL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS Materia (
+    cod_materia INTEGER PRIMARY KEY,
     nombre TEXT,
     descripcion TEXT,
     cod_plan INTEGER NOT NULL,
-    CONSTRAINT fk_cod_materia FOREIGN KEY (cod_plan) references PlanDeEstudios(cod_plan)
+
+    FOREIGN KEY (cod_plan)
+        REFERENCES PlanDeEstudios(cod_plan)
 );
 
-CREATE TABLE Carrera(
+CREATE TABLE IF NOT EXISTS Carrera (
     cod_carrera INTEGER PRIMARY KEY,
     nombre TEXT,
     descripcion TEXT

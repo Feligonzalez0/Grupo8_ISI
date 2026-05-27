@@ -49,4 +49,8 @@ public class User extends Model {
     public boolean esAlumno()  { 
         return "ALUMNO".equals(getRol()); 
     }
+
+    public boolean esUnassigned()  { 
+        return "UNASSIGNED".equals(getRol()); 
+    }
 }

@@ -34,6 +34,24 @@ public class App {
     // Se inicializa una sola vez para ser reutilizada en toda la aplicación.
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
+    private static void ejecutarScheme() {
+    try {
+        String sql = new String(
+            App.class.getClassLoader()
+                .getResourceAsStream("scheme.sql")
+                .readAllBytes()
+        );
+
+        Base.exec(sql);
+
+        System.out.println("Schema ejecutado correctamente.");
+
+    } catch (Exception e) {
+        System.err.println("Error ejecutando schema.sql");
+        e.printStackTrace();
+    }
+}
+    
     /**
      * Método principal que se ejecuta al iniciar la aplicación.
      * Aquí se configuran todas las rutas y filtros de Spark.
@@ -66,6 +84,22 @@ public class App {
                         + e.getMessage());
             }
         });
+        
+        try {
+            Base.open(
+                dbConfig.getDriver(),
+                dbConfig.getDbUrl(),
+                dbConfig.getUser(),
+                dbConfig.getPass()
+            );
+
+            ejecutarScheme();
+
+            Base.close();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         // --- Filtro 'after' para cerrar la conexión a la base de datos ---
         // Este filtro se ejecuta después de que cada solicitud HTTP ha sido procesada.
@@ -128,11 +162,31 @@ public class App {
             // 2. Si el usuario está logueado, añade el nombre de usuario al modelo para la
             // plantilla.
             model.put("username", currentUsername);
-            model.put("userRol", userRol);
+            String rolFormateado = userRol.substring(0,1).toUpperCase() +
+                       userRol.substring(1).toLowerCase();
+            model.put("rol", rolFormateado);
             model.put("isAdmin",   "ADMINISTRADOR".equals(userRol));
             model.put("isDocente", "DOCENTE".equals(userRol));
             model.put("isAlumno",  "ALUMNO".equals(userRol));
+            model.put("isUnassigned",  "UNASSIGNED".equals(userRol));
             
+            String rolClass = "";
+
+            switch (userRol) {
+                case "ADMINISTRADOR":
+                    rolClass = "bg-purple-100 text-purple-700";
+                    break;
+
+                case "DOCENTE":
+                    rolClass = "bg-blue-100 text-blue-700";
+                    break;
+
+                case "ESTUDIANTE":
+                    rolClass = "bg-green-100 text-green-700";
+                    break;
+                default: rolClass = "bg-gray-100 text-gray-700";
+            }
+        model.put("rolClass", rolClass);
             // 3. Renderiza la plantilla del dashboard con el nombre de usuario.
             return new ModelAndView(model, "dashboard.mustache");
         }, new MustacheTemplateEngine()); // Especifica el motor de plantillas para esta ruta.
@@ -203,7 +257,7 @@ public class App {
 
                 ac.set("name", name); // Asigna el nombre de usuario.
                 ac.set("password", hashedPassword); // Asigna la contraseña hasheada.
-                ac.set("rol", "ALUMNO"); // Asigna el rol por defecto a la nueva cuenta.
+                ac.set("rol", "UNASSIGNED"); // Asigna el rol por defecto a la nueva cuenta.
                 ac.saveIt(); // Guarda el nuevo usuario en la tabla 'users'.
 
                 res.status(201); // Código de estado HTTP 201 (Created) para una creación exitosa.
@@ -305,7 +359,7 @@ public class App {
                 // ruta '/user/new').
                 newUser.set("name", name); // Asigna el nombre al campo 'name'.
                 newUser.set("password", BCrypt.hashpw(password, BCrypt.gensalt())); // Asigna la contraseña al campo 'password'.
-                newUser.set("rol", "ALUMNO"); // Asigna el rol ALUMNO al nuevo usuario.
+                newUser.set("rol", "UNASSIGNED"); // Asigna el rol UNASSIGNED al nuevo usuario.
                 newUser.saveIt(); // Guarda el nuevo usuario en la tabla 'users'.
 
                 res.status(201); // Created.
