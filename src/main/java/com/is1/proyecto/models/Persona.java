@@ -33,7 +33,7 @@ public class Persona extends Model {
         return getInteger("fecha_nacimiento");
     }
 
-    public void setFechaNacimiento(Integer fecha_nacimiento) {
+    public void setFechaNacimiento(String fecha_nacimiento) {
         set("fecha_nacimiento", fecha_nacimiento);
     }
 
@@ -41,7 +41,7 @@ public class Persona extends Model {
         return getInteger("telefono");
     }
 
-    public void setTelefono(Integer telefono) {
+    public void setTelefono(String telefono) {
         set("telefono", telefono);
     }
 

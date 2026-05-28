@@ -378,71 +378,138 @@ public class App {
         });
 
         post("/docente/new", (req, res) -> {
+
             String nombre = req.queryParams("nombre");
             String apellido = req.queryParams("apellido");
             String dniString = req.queryParams("dni");
-            String codigoProfesorString = req.queryParams("codigo_profesor");
             String email = req.queryParams("email");
 
-            // Validacion para que ningun campo quede vacío
-            if (dniString.isEmpty() || nombre.isEmpty() || apellido.isEmpty() || codigoProfesorString.isEmpty() || email.isEmpty()){
-                res.redirect("/agregarDocente?errorMessage=Todos los campos son requeridos");
+            // NUEVOS DATOS
+            String fechaNacimiento = req.queryParams("fecha_nacimiento");
+            String telefono = req.queryParams("telefono");
+            String direccion = req.queryParams("direccion");
+
+            // USER ASOCIADO
+            String username = req.queryParams("username");
+
+            // =========================
+            // VALIDACIONES
+            // =========================
+
+            if (
+                dniString.isEmpty() ||
+                nombre.isEmpty() ||
+                apellido.isEmpty() ||
+                email.isEmpty() ||
+                fechaNacimiento.isEmpty() ||
+                telefono.isEmpty() ||
+                direccion.isEmpty() ||
+                username.isEmpty()
+            ) {
+
+                res.redirect("/agregarDocente?errorMessage=Todos los campos son obligatorios.");
                 return null;
             }
 
-            // Validacion email valido:
-            if (!esEmailValido(email)){
+            // Email válido
+            if (!esEmailValido(email)) {
                 res.redirect("/agregarDocente?errorMessage=Ingrese un email valido.");
                 return null;
             }
 
-            // Validacion email no repetido:
-            Docente aux = Docente.findFirst("email = ?", email);
-            if (aux != null){
+            // Email repetido
+            Docente docenteExistente = Docente.findFirst("email = ?", email);
+
+            if (docenteExistente != null) {
                 res.redirect("/agregarDocente?errorMessage=Ya existe un docente con ese email.");
                 return null;
             }
 
+            // Verificar que exista el user
+            User usuarioExistente = User.findFirst("name = ?", username);
+
+            if (usuarioExistente == null) {
+                res.redirect("/agregarDocente?errorMessage=No existe un usuario con ese nombre.");
+                return null;
+            }
+
+            // Verificar que el usuario no esté asociado a otro docente
+            Docente docenteConUsuario = Docente.findFirst("user_id = ?", usuarioExistente.getId());
+
+            if (docenteConUsuario != null) {
+                res.redirect("/agregarDocente?errorMessage=Ese usuario ya esta asociado a otro docente.");
+                return null;
+            }
+            
+            // Verificar que el user NO es ADMIN
+            if ("ADMINISTRADOR".equals(usuarioExistente.getString("rol"))) {
+                res.redirect("/agregarDocente?errorMessage=No puedes asignar un administrador como docente.");
+                return null;
+            }
+            
+            // VALIDAR NUMEROS VALIDOS
+            Integer dni;
+            Integer codigoProfesor;
             try {
-                Integer codigoProfesor = Integer.parseInt(codigoProfesorString);
-                Integer dni = Integer.parseInt(dniString); // Hacemos esto para parsear la string que devuelve queryParams con un Int
-                
-                // Crear persona
-                Persona persona = new Persona(); // Creamos una nueva instancia;
+                dni = Integer.parseInt(dniString);
+            } catch (NumberFormatException e) {
+                res.redirect("/agregarDocente?errorMessage=DNI debe ser un numero valido.");
+                return null;
+            }
+
+            // VALIDAR DNI NO REPETIDO
+            Persona personaExistente = Persona.findFirst("dni = ?", dni);
+            if (personaExistente != null) {
+                res.redirect("/agregarDocente?errorMessage=Ya existe una persona registrada con ese DNI.");
+                return null;
+            }
+
+            try {                
+                // =========================
+                // CREAR PERSONA
+                // =========================
+
+                Persona persona = new Persona();
+
                 persona.setDNI(dni);
                 persona.setNombre(nombre);
                 persona.setApellido(apellido);
-                persona.saveIt(); // Guardamos la nueva persona en su tabla
 
-                // Crear docente
+                persona.setFechaNacimiento(fechaNacimiento);
+                persona.setTelefono(telefono);
+                persona.setDireccion(direccion);
+
+                // =========================
+                // CREAR DOCENTE
+                // =========================
+
                 Docente docente = new Docente();
+
                 docente.setDNI(dni);
-                docente.setCodigo(codigoProfesor);
                 docente.setEmail(email);
+
+                // Asociar user
+                docente.set("user_id", usuarioExistente.getId());
+
+                // Guardar docente
                 docente.saveIt();
 
-                // Crear usuario para el docente con DNI como usuario y contraseña
-                User usuarioDocente = new User();
-                usuarioDocente.set("name",     String.valueOf(dni));
-                usuarioDocente.set("password", BCrypt.hashpw(String.valueOf(dni), BCrypt.gensalt()));
-                usuarioDocente.set("rol",      "DOCENTE");
-                usuarioDocente.saveIt();
-
+                // Actualizar rol
+                usuarioExistente.set("rol", "DOCENTE");
+                usuarioExistente.saveIt();
+                persona.saveIt();
                 res.redirect("/agregarDocente?successMessage=Docente agregado correctamente.");
                 return null;
-
-            } catch (NumberFormatException e) {
-                // Error al convertir DNI o código
-                res.redirect("/agregarDocente?errorMessage=DNI y Codigo Profesor deben ser numeros validos");
-                return null;
             } catch (Exception e) {
+
                 String msg = e.getMessage();
-                
-                if (msg != null && msg.contains("UNIQUE constraint failed: Persona.dni")){
+
+                if (msg != null && msg.contains("UNIQUE constraint failed: Persona.dni")) {
+
                     res.redirect("/agregarDocente?errorMessage=Ya existe una persona registrada con ese DNI.");
                     return null;
                 }
-                
+
                 res.redirect("/agregarDocente?errorMessage=Error al agregar docente: " + msg);
                 return null;
             }
@@ -488,12 +555,16 @@ public class App {
                 model.put("errorMessage", errorMessage);
             }
 
-            // Inicializamos las variables con vacio:
+            // Inicializamos variables
             model.put("dni", "");
             model.put("nombre", "");
             model.put("apellido", "");
-            model.put("codigo_profesor", "");
             model.put("email", "");
+
+            model.put("fecha_nacimiento", "");
+            model.put("telefono", "");
+            model.put("direccion", "");
+            model.put("username", "");
 
             // Renderizamos la plantilla
             return new ModelAndView(model, "agregarDocente.mustache");

@@ -27,8 +27,8 @@ CREATE TABLE IF NOT EXISTS Persona (
 );
 
 CREATE TABLE IF NOT EXISTS Docente (
-    dni INTEGER PRIMARY KEY,
-    codigo_profesor INTEGER NOT NULL UNIQUE,
+    dni INTEGER,
+    codigo_profesor INTEGER PRIMARY KEY AUTOINCREMENT,
     email TEXT,
     user_id INTEGER UNIQUE,
 
