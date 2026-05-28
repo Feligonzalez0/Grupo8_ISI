@@ -62,18 +62,6 @@
             Ver Docentes
         </button>
 
-        <!-- UPDATE -->
-        <button
-            class="bg-yellow-500 text-white px-5 py-2 rounded-lg hover:bg-yellow-600 transition font-semibold">
-            Actualizar
-        </button>
-
-        <!-- DELETE -->
-        <button
-            class="bg-red-600 text-white px-5 py-2 rounded-lg hover:bg-red-700 transition font-semibold">
-            Eliminar
-        </button>
-
     </div>
 
     <!-- TABLA -->
@@ -139,17 +127,15 @@
                         <td class="p-3 border text-center">
 
                             <div class="flex justify-center gap-2">
-
-                                <button
-                                    class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition">
+                                <a href="/admin/docentes/{{id}}/edit"
+                                class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition">
                                     Editar
-                                </button>
+                                </a>
 
-                                <button
-                                    class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition">
+                                <a href="/admin/docentes/{{id}}/delete"
+                                class="bg-red-500 hover:bg-red-600 text-white px-3 py-1 rounded text-sm">
                                     Eliminar
-                                </button>
-
+                                </a>
                             </div>
 
                         </td>

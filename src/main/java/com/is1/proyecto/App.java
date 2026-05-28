@@ -254,6 +254,14 @@ public class App {
             }
 
             try {
+                
+                User usuarioExistente = User.findFirst("name = ?", name);
+                if (usuarioExistente != null) {
+                    res.status(400);
+                    res.redirect("/user/create?error=El nombre de usuario ya existe.");
+                    return "";
+                }
+
                 // Intenta crear y guardar la nueva cuenta en la base de datos.
                 User ac = new User(); // Crea una nueva instancia del modelo User.
                 // Hashea la contraseña de forma segura antes de guardarla.
@@ -648,6 +656,193 @@ public class App {
 
         }, new MustacheTemplateEngine());
 
+        get("/admin/docentes/:id/edit", (req, res) -> {
+
+            Map<String, Object> model = new HashMap<>();
+
+            Integer codigoProfesor = Integer.parseInt(req.params(":id"));
+            
+            // DOCENTE
+            Docente docente = Docente.findFirst("codigo_profesor = ?", codigoProfesor);
+
+            if (docente == null) {
+                res.redirect("/admin/docentes?errorMessage=Error: docente no encontrado");
+                return null;
+            }
+
+            // PERSONA
+            Integer dni = docente.getInteger("dni");
+
+            Persona persona = Persona.findFirst("dni = ?", dni);
+
+            // MODEL
+            model.put("codigoProfesor", docente.getInteger("codigo_profesor"));
+            model.put("email", docente.getString("email"));
+            model.put("dni", persona.getInteger("dni"));
+            model.put("nombre", persona.getString("nombre"));
+            model.put("apellido", persona.getString("apellido"));
+            model.put("fechaNacimiento", persona.getString("fecha_nacimiento"));
+            model.put("telefono", persona.getString("telefono"));
+            model.put("direccion",persona.getString("direccion"));
+
+            return new ModelAndView(model,"admin/docentes/editarDocente.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        post("/admin/docentes/:id/edit", (req, res) -> {
+
+            Integer codigoProfesor = Integer.parseInt(req.params(":id"));
+
+            Docente docente = Docente.findFirst("codigo_profesor = ?", codigoProfesor);
+
+            if (docente == null) {
+
+                res.redirect(
+                        "/admin/docentes?errorMessage=Docente no encontrado"
+                );
+
+                return null;
+            }
+
+            Integer dni = docente.getInteger("dni");
+
+            // FORM
+            String nombre = req.queryParams("nombre");
+            String apellido = req.queryParams("apellido");
+            String fechaNacimiento = req.queryParams("fecha_nacimiento");
+            String telefono = req.queryParams("telefono");
+            String direccion = req.queryParams("direccion");
+            String email = req.queryParams("email");
+
+            try {
+
+                Base.openTransaction();
+                
+                // UPDATE PERSONA
+                Base.exec(
+                        "UPDATE Persona " +
+                        "SET nombre = ?, apellido = ?, fecha_nacimiento = ?, telefono = ?, direccion = ? " +
+                        "WHERE dni = ?",
+
+                        nombre,
+                        apellido,
+                        fechaNacimiento,
+                        telefono,
+                        direccion,
+                        dni
+                );
+                
+                // UPDATE DOCENTE
+                Base.exec(
+                        "UPDATE Docente SET email = ? WHERE codigo_profesor = ?",
+                        email,
+                        codigoProfesor
+                );
+
+                Base.commitTransaction();
+
+                res.redirect(
+                        "/admin/docentes?successMessage=Docente actualizado correctamente"
+                );
+
+                return null;
+
+            } catch (Exception e) {
+
+                Base.rollbackTransaction();
+
+                e.printStackTrace();
+
+                res.redirect(
+                        "/admin/docentes/" + codigoProfesor + "/edit?errorMessage=Error al actualizar docente");
+
+                return null;
+            }
+
+        });
+
+        get("/admin/docentes/:id/delete", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Integer codigoProfesor = Integer.parseInt(req.params(":id"));
+
+            Docente docente = Docente.findFirst("codigo_profesor = ?", codigoProfesor);
+
+            if (docente == null) {
+                res.redirect("/admin/docentes?errorMessage=Docente no encontrado");
+                return null;
+            }
+
+            Integer dni = docente.getInteger("dni");
+
+            Persona persona = Persona.findFirst("dni = ?", dni);
+
+            Integer userId = docente.getInteger("user_id");
+
+            User user = User.findById(userId);
+
+            model.put("codigoProfesor", codigoProfesor);
+            model.put("email", docente.getString("email"));
+
+            if (persona != null) {
+                model.put("dni", persona.getInteger("dni"));
+                model.put("nombre", persona.getString("nombre"));
+                model.put("apellido", persona.getString("apellido"));
+            }
+
+            if (user != null) {
+                model.put("username", user.getString("name"));
+            }
+
+            return new ModelAndView(model, "admin/docentes/eliminarDocente.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        post("/admin/docentes/:id/delete", (req, res) -> {
+
+            Integer codigoProfesor = Integer.parseInt(req.params(":id"));
+
+            Docente docente = Docente.findFirst("codigo_profesor = ?", codigoProfesor);
+            if (docente == null) {
+                res.redirect("/admin/docentes?errorMessage=Docente no encontrado");
+                return null;
+            }
+
+            Integer dni = docente.getInteger("dni");
+            Integer userId = docente.getInteger("user_id");
+
+            User user = User.findById(userId);
+
+            try {
+                Base.openTransaction();
+
+                // ELIMINAR DOCENTE
+                Base.exec("DELETE FROM Docente WHERE codigo_profesor = ?", codigoProfesor);
+
+                // ELIMINAR PERSONA
+                Base.exec("DELETE FROM Persona WHERE dni = ?", dni);
+
+                // RESET ROL USER
+                if (user != null) {
+                    user.set("rol", "UNASSIGNED");
+                    user.saveIt();
+                }
+
+                Base.commitTransaction();
+
+                res.redirect("/admin/docentes?successMessage=Docente eliminado correctamente");
+
+                return null;
+
+            } catch (Exception e) {
+                Base.rollbackTransaction();
+                e.printStackTrace();
+                res.redirect("/admin/docentes?errorMessage=Error al eliminar docente");
+
+                return null;
+            }
+
+        });
 
     } // Fin del método main
 
