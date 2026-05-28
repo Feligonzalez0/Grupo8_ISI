@@ -1,7 +1,9 @@
 package com.is1.proyecto; // Define el paquete de la aplicación, debe coincidir con la estructura de carpetas.
 
+import java.util.ArrayList;
 // Importaciones necesarias para la aplicación Spark
 import java.util.HashMap; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
+import java.util.List;
 import java.util.Map; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
 
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
@@ -14,6 +16,8 @@ import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
 
 import spark.ModelAndView; // Clase Singleton para la configuración de la base de datos.
+import spark.Request;
+
 import static spark.Spark.after;
 import static spark.Spark.before; // Modelo de ActiveJDBC que representa la tabla 'users'.
 import static spark.Spark.get;
@@ -407,13 +411,13 @@ public class App {
                 username.isEmpty()
             ) {
 
-                res.redirect("/agregarDocente?errorMessage=Todos los campos son obligatorios.");
+                res.redirect("/admin/docentes/agregar?errorMessage=Todos los campos son obligatorios.");
                 return null;
             }
 
             // Email válido
             if (!esEmailValido(email)) {
-                res.redirect("/agregarDocente?errorMessage=Ingrese un email valido.");
+                res.redirect("/admin/docentes/agregar?errorMessage=Ingrese un email valido.");
                 return null;
             }
 
@@ -421,7 +425,7 @@ public class App {
             Docente docenteExistente = Docente.findFirst("email = ?", email);
 
             if (docenteExistente != null) {
-                res.redirect("/agregarDocente?errorMessage=Ya existe un docente con ese email.");
+                res.redirect("/admin/docentes/agregar?errorMessage=Ya existe un docente con ese email.");
                 return null;
             }
 
@@ -429,7 +433,7 @@ public class App {
             User usuarioExistente = User.findFirst("name = ?", username);
 
             if (usuarioExistente == null) {
-                res.redirect("/agregarDocente?errorMessage=No existe un usuario con ese nombre.");
+                res.redirect("/admin/docentes/agregar?errorMessage=No existe un usuario con ese nombre.");
                 return null;
             }
 
@@ -437,13 +441,13 @@ public class App {
             Docente docenteConUsuario = Docente.findFirst("user_id = ?", usuarioExistente.getId());
 
             if (docenteConUsuario != null) {
-                res.redirect("/agregarDocente?errorMessage=Ese usuario ya esta asociado a otro docente.");
+                res.redirect("/admin/docentes/agregar?errorMessage=Ese usuario ya esta asociado a otro docente.");
                 return null;
             }
             
             // Verificar que el user NO es ADMIN
             if ("ADMINISTRADOR".equals(usuarioExistente.getString("rol"))) {
-                res.redirect("/agregarDocente?errorMessage=No puedes asignar un administrador como docente.");
+                res.redirect("/admin/docentes/agregar?errorMessage=No puedes asignar un administrador como docente.");
                 return null;
             }
             
@@ -453,14 +457,14 @@ public class App {
             try {
                 dni = Integer.parseInt(dniString);
             } catch (NumberFormatException e) {
-                res.redirect("/agregarDocente?errorMessage=DNI debe ser un numero valido.");
+                res.redirect("/admin/docentes/agregar?errorMessage=DNI debe ser un numero valido.");
                 return null;
             }
 
             // VALIDAR DNI NO REPETIDO
             Persona personaExistente = Persona.findFirst("dni = ?", dni);
             if (personaExistente != null) {
-                res.redirect("/agregarDocente?errorMessage=Ya existe una persona registrada con ese DNI.");
+                res.redirect("/admin/docentes/agregar?errorMessage=Ya existe una persona registrada con ese DNI.");
                 return null;
             }
 
@@ -498,7 +502,7 @@ public class App {
                 usuarioExistente.set("rol", "DOCENTE");
                 usuarioExistente.saveIt();
                 persona.saveIt();
-                res.redirect("/agregarDocente?successMessage=Docente agregado correctamente.");
+                res.redirect("/admin/docentes/agregar?successMessage=Docente agregado correctamente.");
                 return null;
             } catch (Exception e) {
 
@@ -506,17 +510,17 @@ public class App {
 
                 if (msg != null && msg.contains("UNIQUE constraint failed: Persona.dni")) {
 
-                    res.redirect("/agregarDocente?errorMessage=Ya existe una persona registrada con ese DNI.");
+                    res.redirect("/admin/docentes/agregar?errorMessage=Ya existe una persona registrada con ese DNI.");
                     return null;
                 }
 
-                res.redirect("/agregarDocente?errorMessage=Error al agregar docente: " + msg);
+                res.redirect("/admin/docentes/agregar?errorMessage=Error al agregar docente: " + msg);
                 return null;
             }
         });
 
-        // Con esto podemos hacer localhost:puerto/agregarDocente
-        get("/agregarDocente", (req, res) -> {
+        // Con esto podemos hacer localhost:puerto/admin/docentes/agregar
+        get("/admin/docentes/agregar", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
         
             // Intenta obtener el nombre de usuario y la bandera de login de la sesión.
@@ -567,14 +571,96 @@ public class App {
             model.put("username", "");
 
             // Renderizamos la plantilla
-            return new ModelAndView(model, "agregarDocente.mustache");
+            return new ModelAndView(model, "admin/docentes/agregarDocente.mustache");
         }, new MustacheTemplateEngine());
+        
+        // ==========================
+        //  DASHBOARD ADMINISTRACIÓN
+        // ==========================
+
+        get("/admin", (req, res) -> {
+            if (!isAdmin(req)) {
+                res.redirect("/dashboard");
+                return null;
+            }
+
+            return new ModelAndView(new HashMap<>(), "admin/adminDashboard.mustache");
+
+        }, new MustacheTemplateEngine());
+        
+        // DOCENTES
+        get("/admin/docentes", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            List<Docente> docentesDB = Docente.findAll();
+
+            List<Map<String, Object>> docentes = new ArrayList<>();
+
+            for (Docente docente : docentesDB) {
+
+                Map<String, Object> docenteView = new HashMap<>();
+                
+                // DATOS DOCENTE
+                docenteView.put("id", docente.getInteger("codigo_profesor"));
+
+                docenteView.put("email", docente.getString("email"));
+
+                // PERSONA
+                Integer dni = docente.getInteger("dni");
+
+                Persona persona = Persona.findFirst("dni = ?", dni);
+
+                if (persona != null) {
+                    docenteView.put("dni", persona.getInteger("dni"));
+                    docenteView.put("nombre",persona.getString("nombre"));
+                    docenteView.put("apellido", persona.getString("apellido"));
+                    docenteView.put("telefono", persona.getString("telefono"));
+                    docenteView.put("direccion", persona.getString("direccion"));
+                }
+                
+                // USER
+                Integer userId = docente.getInteger("user_id");
+                User user = User.findById(userId);
+
+                if (user != null) {
+                    docenteView.put("username", user.getString("name"));
+                }
+
+                docentes.add(docenteView);
+            }
+
+            model.put("docentes", docentes);
+
+            model.put(
+                    "successMessage",
+                    req.queryParams("successMessage")
+            );
+
+            model.put(
+                    "errorMessage",
+                    req.queryParams("errorMessage")
+            );
+
+            return new ModelAndView(
+                    model,
+                    "admin/docentes/docentesDashboard.mustache"
+            );
+
+        }, new MustacheTemplateEngine());
+
 
     } // Fin del método main
 
+    // HELPERS
     public static boolean esEmailValido(String email) {
         String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
         return email != null && email.matches(regex);
     }
+    
+    private static boolean isAdmin(Request req) {
+        String rol = req.session().attribute("userRol");
+        return "ADMINISTRADOR".equals(rol);
+    }
+
 
 } // Fin de la clase App
