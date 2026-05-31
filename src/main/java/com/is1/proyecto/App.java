@@ -2034,6 +2034,208 @@ public class App {
             return null;
         }
     });
+
+    //! MATERIAS 
+    // LISTAR
+    get("/admin/materias", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        Map<String, Object> model = new HashMap<>();
+        List<Materia> materiasDB = Materia.findAll();
+        List<Map<String, Object>> materias = new ArrayList<>();
+
+        for (Materia m : materiasDB) {
+            Map<String, Object> mv = new HashMap<>();
+            mv.put("id",          m.getCodMateria());
+            mv.put("nombre",      m.getNombre());
+            mv.put("descripcion", m.getDescripcion());
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", m.getCodMateria());
+            mv.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
+
+            materias.add(mv);
+        }
+
+        model.put("materias",       materias);
+        model.put("successMessage", req.queryParams("successMessage"));
+        model.put("errorMessage",   req.queryParams("errorMessage"));
+
+        return new ModelAndView(model, "admin/materias/materiasDashboard.mustache");
+    }, new MustacheTemplateEngine());
+
+    // FORMULARIO CREAR
+    get("/admin/materias/agregar", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        Map<String, Object> model = new HashMap<>();
+
+        List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
+        List<Map<String, Object>> planes = new ArrayList<>();
+        for (PlanDeEstudios p : planesDB) {
+            Map<String, Object> pv = new HashMap<>();
+            pv.put("codPlan",    p.getCod());
+            pv.put("nombrePlan", "Plan " + p.getAño());
+            planes.add(pv);
+        }
+
+        model.put("planes",         planes);
+        model.put("sinPlanes",      planes.isEmpty());
+        model.put("errorMessage",   req.queryParams("errorMessage"));
+
+        return new ModelAndView(model, "admin/materias/agregarMateria.mustache");
+    }, new MustacheTemplateEngine());
+
+    // CREAR
+    post("/admin/materias/agregar", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        String nombre      = req.queryParams("nombre");
+        String descripcion = req.queryParams("descripcion");
+        String codPlanStr  = req.queryParams("cod_plan");
+
+        if (nombre == null || nombre.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
+            res.redirect("/admin/materias/agregar?errorMessage=Nombre y plan son obligatorios.");
+            return null;
+        }
+
+        try {
+            int codPlan = Integer.parseInt(codPlanStr);
+
+            Materia materia = new Materia();
+            materia.setNombre(nombre);
+            materia.setDescripcion(descripcion);
+            materia.setCodPlan(codPlan);
+            materia.saveIt();
+
+            res.redirect("/admin/materias?successMessage=Materia creada correctamente.");
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.redirect("/admin/materias/agregar?errorMessage=Error al crear la materia: " + e.getMessage());
+            return null;
+        }
+    });
+
+    // FORMULARIO EDITAR
+    get("/admin/materias/:id/edit", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        Map<String, Object> model = new HashMap<>();
+        int codMateria = Integer.parseInt(req.params(":id"));
+
+        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+        if (materia == null) {
+            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+            return null;
+        }
+
+        List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
+        List<Map<String, Object>> planes = new ArrayList<>();
+        for (PlanDeEstudios p : planesDB) {
+            Map<String, Object> pv = new HashMap<>();
+            pv.put("codPlan",    p.getCod());
+            pv.put("nombrePlan", "Plan " + p.getAño());
+            pv.put("selected",   p.getCod().equals(materia.getCodMateria()));
+            planes.add(pv);
+        }
+
+        model.put("codMateria",   materia.getCodMateria());
+        model.put("nombre",       materia.getNombre());
+        model.put("descripcion",  materia.getDescripcion());
+        model.put("planes",       planes);
+        model.put("errorMessage", req.queryParams("errorMessage"));
+
+        return new ModelAndView(model, "admin/materias/editarMateria.mustache");
+    }, new MustacheTemplateEngine());
+
+    // EDITAR
+    post("/admin/materias/:id/edit", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        int codMateria = Integer.parseInt(req.params(":id"));
+
+        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+        if (materia == null) {
+            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+            return null;
+        }
+
+        String nombre      = req.queryParams("nombre");
+        String descripcion = req.queryParams("descripcion");
+        String codPlanStr  = req.queryParams("cod_plan");
+
+        if (nombre == null || nombre.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
+            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Nombre y plan son obligatorios.");
+            return null;
+        }
+
+        try {
+            Base.exec(
+                "UPDATE Materia SET nombre = ?, descripcion = ?, cod_plan = ? WHERE cod_materia = ?",
+                nombre, descripcion, Integer.parseInt(codPlanStr), codMateria
+            );
+
+            res.redirect("/admin/materias?successMessage=Materia actualizada correctamente.");
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Error al actualizar: " + e.getMessage());
+            return null;
+        }
+    });
+
+    // CONFIRMAR ELIMINAR
+    get("/admin/materias/:id/delete", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        Map<String, Object> model = new HashMap<>();
+        int codMateria = Integer.parseInt(req.params(":id"));
+
+        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+        if (materia == null) {
+            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+            return null;
+        }
+
+        model.put("codMateria",  materia.getCodMateria());
+        model.put("nombre",      materia.getNombre());
+        model.put("descripcion", materia.getDescripcion());
+
+        return new ModelAndView(model, "admin/materias/eliminarMateria.mustache");
+    }, new MustacheTemplateEngine());
+
+    // ELIMINAR
+    post("/admin/materias/:id/delete", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        int codMateria = Integer.parseInt(req.params(":id"));
+
+        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+        if (materia == null) {
+            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+            return null;
+        }
+
+        try {
+            Base.openTransaction();
+            Base.exec("DELETE FROM PeriodoAcademico WHERE cod_materia = ?", codMateria);
+            Base.exec("DELETE FROM Materia WHERE cod_materia = ?", codMateria);
+            Base.commitTransaction();
+
+            res.redirect("/admin/materias?successMessage=Materia eliminada correctamente.");
+            return null;
+
+        } catch (Exception e) {
+            Base.rollbackTransaction();
+            e.printStackTrace();
+            res.redirect("/admin/materias?errorMessage=Error al eliminar la materia.");
+            return null;
+        }
+    });
+
+
     } // Fin del método main
 
     // HELPERS

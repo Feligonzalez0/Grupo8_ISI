@@ -1,7 +1,7 @@
-<<<<<<< HEAD
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Carrera.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/config/DBConfigSingleton.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PlanDeEstudios.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PeriodoAcademico.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estudiante.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Docente.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/App.java
@@ -9,16 +9,3 @@
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/User.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Rol.java
 /home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Persona.java
-=======
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PlanDeEstudios.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Carrera.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Materia.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/User.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/App.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PeriodoAcademico.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estudiante.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/config/DBConfigSingleton.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Persona.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Rol.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Docente.java
->>>>>>> 7e125ff8f7a81f8a0a9433947d804eb98d877c4f
