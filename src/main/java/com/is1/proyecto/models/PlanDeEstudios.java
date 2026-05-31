@@ -1,11 +1,11 @@
 package com.is1.proyecto.models;
 
-import java.sql.Date;
 import org.javalite.activejdbc.Model;
+import org.javalite.activejdbc.annotations.IdName;
 import org.javalite.activejdbc.annotations.Table;
 
 @Table("PlanDeEstudios")
-
+@IdName("cod_plan") 
 public class PlanDeEstudios extends Model{
 
   public Integer getCod() {
@@ -46,5 +46,13 @@ public class PlanDeEstudios extends Model{
 
     public void setCantidadMaterias(Integer cantidad_materias_total) {
         set("cantidad_materias_total", cantidad_materias_total);
+    }
+
+    public void setCodCarrera(Integer codCarrera) {
+        set("cod_carrera", codCarrera);
+    }
+
+    public Integer getCodCarrera() {
+        return getInteger("cod_carrera");
     }
 }
