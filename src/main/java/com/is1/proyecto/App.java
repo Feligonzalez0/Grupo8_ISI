@@ -31,8 +31,8 @@ import static spark.Spark.notFound;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
-// mvn activejdbc-instrumentation:instrument
-// mvn exec:java "-Dexec.mainClass=com.is1.proyecto.App"
+// mvn clean compile activejdbc-instrumentation:instrument exec:java "-Dexec.mainClass=com.is1.proyecto.App"
+
 /**
  * Clase principal de la aplicación Spark.
  * Configura las rutas, filtros y el inicio del servidor web.
