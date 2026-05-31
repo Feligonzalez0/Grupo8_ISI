@@ -21,21 +21,17 @@
 
             <thead class="bg-gray-100">
                 <tr>
-                    <th class="p-3 border">Numero de Legajo</th>
-                    <th class="p-3 border">DNI</th>
+                    <th class="p-3 border">ID</th>
+                    <th class="p-3 border">Codigo</th>
                     <th class="p-3 border">Nombre</th>
-                    <th class="p-3 border">Apellido</th>
-                    <th class="p-3 border">Telefono</th>
-                    <th class="p-3 border">Direccion</th>
-                    <th class="p-3 border">Fecha de Nacimiento</th>
-                    <th class="p-3 border">Email</th>
-                    <th class="p-3 border">Usuario</th>
+                    <th class="p-3 border">Descripcion</th>
+                    <th class="p-3 border">Plan</th>
                 </tr>
             </thead>
 
             <tbody>
 
-                {{#estudiantes}}
+                {{#materias}}
                 <tr class="hover:bg-gray-50">
 
                     <td class="p-3 border text-center">
@@ -43,7 +39,7 @@
                     </td>
 
                     <td class="p-3 border text-center">
-                        {{dni}}
+                        {{codMateria}}
                     </td>
 
                     <td class="p-3 border text-center">
@@ -51,31 +47,15 @@
                     </td>
 
                     <td class="p-3 border text-center">
-                        {{apellido}}
+                        {{descripcion}}
                     </td>
 
                     <td class="p-3 border text-center">
-                        {{telefono}}
-                    </td>
-
-                    <td class="p-3 border text-center">
-                        {{direccion}}
-                    </td>
-
-                    <td class="p-3 border text-center">
-                        {{fecha_nacimiento}}
-                    </td>
-
-                    <td class="p-3 border text-center">
-                        {{email}}
-                    </td>
-
-                    <td class="p-3 border text-center">
-                        {{username}}
+                        {{nombrePlan}}
                     </td>
 
                 </tr>
-                {{/estudiantes}}
+                {{/materias}}
 
             </tbody>
 

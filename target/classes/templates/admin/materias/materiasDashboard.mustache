@@ -39,7 +39,7 @@
             <table class="min-w-full border border-gray-200">
                 <thead class="bg-gray-100">
                     <tr>
-                        <th class="p-3 border">ID</th>
+                        <th class="p-3 border">Codigo</th>
                         <th class="p-3 border">Nombre</th>
                         <th class="p-3 border">Descripción</th>
                         <th class="p-3 border">Plan</th>
@@ -49,17 +49,17 @@
                 <tbody>
                     {{#materias}}
                     <tr class="hover:bg-gray-50">
-                        <td class="p-3 border text-center">{{id}}</td>
+                        <td class="p-3 border text-center">{{codMateria}}</td>
                         <td class="p-3 border text-center">{{nombre}}</td>
                         <td class="p-3 border text-center">{{descripcion}}</td>
                         <td class="p-3 border text-center">{{nombrePlan}}</td>
                         <td class="p-3 border text-center">
                             <div class="flex justify-center gap-2">
-                                <a href="/admin/materias/{{id}}/edit"
+                                <a href="/admin/materias/{{codMateria}}/edit"
                                    class="bg-yellow-500 text-white px-3 py-1 rounded hover:bg-yellow-600 transition text-sm">
                                     Editar
                                 </a>
-                                <a href="/admin/materias/{{id}}/delete"
+                                <a href="/admin/materias/{{codMateria}}/delete"
                                    class="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition text-sm">
                                     Eliminar
                                 </a>

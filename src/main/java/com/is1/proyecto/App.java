@@ -2052,11 +2052,11 @@ public class App {
 
         for (Materia m : materiasDB) {
             Map<String, Object> mv = new HashMap<>();
-            mv.put("id",          m.getCodMateria());
+            mv.put("codMateria",          m.getCodMateria());
             mv.put("nombre",      m.getNombre());
             mv.put("descripcion", m.getDescripcion());
 
-            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", m.getCodMateria());
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", m.getCodPlan());
             mv.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
 
             materias.add(mv);
@@ -2091,25 +2091,28 @@ public class App {
         return new ModelAndView(model, "admin/materias/agregarMateria.mustache");
     }, new MustacheTemplateEngine());
 
-    // CREAR
+    // AGREGAR
     post("/admin/materias/agregar", (req, res) -> {
         if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
 
         String nombre      = req.queryParams("nombre");
+        String codigo      = req.queryParams("cod_materia");
         String descripcion = req.queryParams("descripcion");
         String codPlanStr  = req.queryParams("cod_plan");
 
-        if (nombre == null || nombre.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
-            res.redirect("/admin/materias/agregar?errorMessage=Nombre y plan son obligatorios.");
+        if (nombre == null || nombre.isEmpty() || codigo == null || codigo.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
+            res.redirect("/admin/materias/agregar?errorMessage=Nombre, codigo y plan son obligatorios.");
             return null;
         }
 
         try {
             int codPlan = Integer.parseInt(codPlanStr);
+            int codMat = Integer.parseInt(codigo);
 
             Materia materia = new Materia();
             materia.setNombre(nombre);
             materia.setDescripcion(descripcion);
+            materia.setCodMateria(codMat);
             materia.setCodPlan(codPlan);
             materia.saveIt();
 
@@ -2142,12 +2145,13 @@ public class App {
             Map<String, Object> pv = new HashMap<>();
             pv.put("codPlan",    p.getCod());
             pv.put("nombrePlan", "Plan " + p.getAño());
-            pv.put("selected",   p.getCod().equals(materia.getCodMateria()));
+            pv.put("selected",   p.getCod().equals(materia.getCodPlan()));
             planes.add(pv);
         }
 
         model.put("codMateria",   materia.getCodMateria());
         model.put("nombre",       materia.getNombre());
+        model.put("Codigo",       materia.getCodMateria());
         model.put("descripcion",  materia.getDescripcion());
         model.put("planes",       planes);
         model.put("errorMessage", req.queryParams("errorMessage"));
@@ -2172,7 +2176,7 @@ public class App {
         String codPlanStr  = req.queryParams("cod_plan");
 
         if (nombre == null || nombre.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
-            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Nombre y plan son obligatorios.");
+            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Nombre, Codigo y Plan son obligatorios.");
             return null;
         }
 

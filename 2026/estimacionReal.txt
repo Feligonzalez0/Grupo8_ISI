@@ -1,2 +1,2 @@
-CRUD Estudiantes me llevó 5:45h
-CRUS Materias 3:30hs
+CRUD Estudiantes me llevó 6:00hs
+CRUD Materias 3:30hs
