@@ -845,6 +845,8 @@ public class App {
 
         });
 
+
+        // CRUD plan de estudios
         // LISTAR
         get("/admin/planes", (req, res) -> {
             if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
@@ -1132,6 +1134,187 @@ public class App {
 
             return new ModelAndView(model, "admin/planes/materiasPlan.mustache");
         }, new MustacheTemplateEngine());
+
+        // CRUD de carreras
+        // LISTAR
+        get("/admin/carreras", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            List<Carrera> carrerasDB = Carrera.findAll();
+            List<Map<String, Object>> carreras = new ArrayList<>();
+
+            for (Carrera c : carrerasDB) {
+                Map<String, Object> cv = new HashMap<>();
+                cv.put("codCarrera",  c.getCodigo());
+                cv.put("nombre",      c.getNombre());
+                cv.put("descripcion", c.getDescripcion());
+                carreras.add(cv);
+            }
+
+            model.put("carreras",       carreras);
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/carreras/carrerasDashboard.mustache");
+        }, new MustacheTemplateEngine());
+
+        // FORMULARIO CREAR
+        get("/admin/carreras/agregar", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/carreras/agregarCarrera.mustache");
+        }, new MustacheTemplateEngine());
+
+        // CREAR
+        post("/admin/carreras/agregar", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            String nombre      = req.queryParams("nombre");
+            String descripcion = req.queryParams("descripcion");
+
+            if (nombre == null || nombre.isEmpty()) {
+                res.redirect("/admin/carreras/agregar?errorMessage=El nombre es obligatorio.");
+                return null;
+            }
+
+            try {
+                Carrera carreraExistente = Carrera.findFirst("nombre = ?", nombre);
+                if (carreraExistente != null) {
+                    res.redirect("/admin/carreras/agregar?errorMessage=Ya existe una carrera con ese nombre.");
+                    return null;
+                }
+
+                Carrera carrera = new Carrera();
+                carrera.setNombre(nombre);
+                carrera.setDescripcion(descripcion);
+                carrera.saveIt();
+
+                res.redirect("/admin/carreras?successMessage=Carrera creada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/carreras/agregar?errorMessage=Error al crear la carrera: " + e.getMessage());
+                return null;
+            }
+        });
+
+        // FORMULARIO EDITAR
+        get("/admin/carreras/:id/edit", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            model.put("codCarrera",   carrera.getCodigo());
+            model.put("nombre",       carrera.getNombre());
+            model.put("descripcion",  carrera.getDescripcion());
+            model.put("errorMessage", req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/carreras/editarCarrera.mustache");
+        }, new MustacheTemplateEngine());
+
+        // EDITAR
+        post("/admin/carreras/:id/edit", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            String nombre      = req.queryParams("nombre");
+            String descripcion = req.queryParams("descripcion");
+
+            if (nombre == null || nombre.isEmpty()) {
+                res.redirect("/admin/carreras/" + codCarrera + "/edit?errorMessage=El nombre es obligatorio.");
+                return null;
+            }
+
+            try {
+                Base.exec(
+                    "UPDATE Carrera SET nombre = ?, descripcion = ? WHERE cod_carrera = ?",
+                    nombre, descripcion, codCarrera
+                );
+
+                res.redirect("/admin/carreras?successMessage=Carrera actualizada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/carreras/" + codCarrera + "/edit?errorMessage=Error al actualizar: " + e.getMessage());
+                return null;
+            }
+        });
+
+        // CONFIRMAR ELIMINAR
+        get("/admin/carreras/:id/delete", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            // Verificar si tiene planes asociados
+            PlanDeEstudios planAsociado = PlanDeEstudios.findFirst("cod_carrera = ?", codCarrera);
+
+            model.put("codCarrera",   carrera.getCodigo());
+            model.put("nombre",       carrera.getNombre());
+            model.put("descripcion",  carrera.getDescripcion());
+            model.put("tienePlanes",  planAsociado != null);
+
+            return new ModelAndView(model, "admin/carreras/eliminarCarrera.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ELIMINAR
+        post("/admin/carreras/:id/delete", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            // Bloquear si tiene planes asociados
+            PlanDeEstudios planAsociado = PlanDeEstudios.findFirst("cod_carrera = ?", codCarrera);
+            if (planAsociado != null) {
+                res.redirect("/admin/carreras?errorMessage=No se puede eliminar una carrera con planes asociados.");
+                return null;
+            }
+
+            try {
+                Base.exec("DELETE FROM Carrera WHERE cod_carrera = ?", codCarrera);
+                res.redirect("/admin/carreras?successMessage=Carrera eliminada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/carreras?errorMessage=Error al eliminar la carrera.");
+                return null;
+            }
+        });
     } // Fin del método main
 
     // HELPERS
