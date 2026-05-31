@@ -1483,7 +1483,6 @@ public class App {
             String cantMatStr     = req.queryParams("cantidad_materias_total");
             String codCarreraStr  = req.queryParams("cod_carrera");
 
-            // Validar vacíos
             if (anioStr.isEmpty() || vigenciaStr.isEmpty() || aniosTotalStr.isEmpty()
                     || cantMatStr.isEmpty() || codCarreraStr.isEmpty()) {
                 res.redirect("/admin/planes/agregar?errorMessage=Todos los campos son obligatorios.");
@@ -1491,13 +1490,12 @@ public class App {
             }
 
             try {
-                int año       = Integer.parseInt(anioStr);
+                int año        = Integer.parseInt(anioStr);
                 int vigencia   = Integer.parseInt(vigenciaStr);
                 int aniosTotal = Integer.parseInt(aniosTotalStr);
                 int cantMat    = Integer.parseInt(cantMatStr);
                 int codCarrera = Integer.parseInt(codCarreraStr);
 
-                // Verificar que la carrera exista
                 Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
                 if (carrera == null) {
                     res.redirect("/admin/planes/agregar?errorMessage=La carrera seleccionada no existe.");
@@ -1509,7 +1507,7 @@ public class App {
                 plan.setVigencia(vigencia);
                 plan.setAñosTotal(aniosTotal);
                 plan.setCantidadMaterias(cantMat);
-                plan.setCod(codCarrera);
+                plan.set("cod_carrera", codCarrera); // <-- directo, sin pasar por setCod()
                 plan.saveIt();
 
                 res.redirect("/admin/planes?successMessage=Plan creado correctamente.");
@@ -1538,23 +1536,31 @@ public class App {
                 return null;
             }
 
-            model.put("codPlan",    plan.getCod());
-            model.put("anio",       plan.getAño());
-            model.put("vigencia",   plan.getVigencia());
-            model.put("aniosTotal", plan.getAñosTotal());
+            model.put("codPlan",      plan.getCod());
+            model.put("anio",         plan.getAño());
+            model.put("vigencia",     plan.getVigencia());
+            model.put("aniosTotal",   plan.getAñosTotal());
             model.put("cantMaterias", plan.getCantidadMaterias());
 
-            // Lista de carreras para el <select>
+            // Lista de carreras separadas para el <select>
             List<Carrera> carrerasDB = Carrera.findAll();
-            List<Map<String, Object>> carreras = new ArrayList<>();
+            List<Map<String, Object>> carreraSelected    = new ArrayList<>();
+            List<Map<String, Object>> carrerasNoSelected = new ArrayList<>();
+
             for (Carrera c : carrerasDB) {
                 Map<String, Object> cv = new HashMap<>();
                 cv.put("codCarrera", c.getCodigo());
                 cv.put("nombre",     c.getNombre());
-                cv.put("selected",   c.getCodigo().equals(plan.getCod()));
-                carreras.add(cv);
+
+                if (c.getCodigo().equals(plan.getCod())) {
+                    carreraSelected.add(cv);
+                } else {
+                    carrerasNoSelected.add(cv);
+                }
             }
-            model.put("carreras", carreras);
+
+            model.put("carreraSelected",    carreraSelected);
+            model.put("carrerasNoSelected", carrerasNoSelected);
             model.put("errorMessage", req.queryParams("errorMessage"));
 
             return new ModelAndView(model, "admin/planes/editarPlan.mustache");
