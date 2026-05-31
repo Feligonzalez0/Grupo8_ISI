@@ -7,6 +7,8 @@ import java.util.Map; // Importa los métodos estáticos principales de Spark (g
 
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contraseñas de forma segura.
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
@@ -21,8 +23,11 @@ import spark.ModelAndView; // Clase Singleton para la configuración de la base 
 import spark.Request;
 import static spark.Spark.after;
 import static spark.Spark.before; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.halt;
+import static spark.Spark.internalServerError;
+import static spark.Spark.notFound;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
@@ -38,6 +43,7 @@ public class App {
     // serialización/deserialización JSON.
     // Se inicializa una sola vez para ser reutilizada en toda la aplicación.
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     private static void ejecutarScheme() {
     try {
@@ -1314,6 +1320,34 @@ public class App {
                 res.redirect("/admin/carreras?errorMessage=Error al eliminar la carrera.");
                 return null;
             }
+        });
+
+        // MANEJO DE ERRORES
+        // 404 (ejemplo: ir a una ruta que no existe)
+        notFound((req, res) -> {
+            res.type("text/html");
+            logger.warn("404 - Ruta no encontrada: {}", req.url());
+            return "<h1>404 - Pagina no encontrada</h1><p>La ruta <b>" + req.url() + "</b> no existe.</p><a href='/'>Volver al inicio</a>";
+        });
+
+        // 500
+        internalServerError((req, res) -> {
+            res.type("text/html");
+            logger.error("500 - Error interno en: {}", req.url());
+            return "<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/'>Volver al inicio</a>";
+        });
+
+        // Excepciones no capturadas
+        exception(Exception.class, (e, req, res) -> {
+            logger.error("Excepción no manejada en {}: {}", req.url(), e.getMessage(), e);
+            res.status(500);
+            res.type("text/html");
+            res.body("<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/'>Volver al inicio</a>");
+        });
+
+        // Acceso no autorizado (ejemplo: intenta entrar a admin sin estar logueado)
+        exception(spark.HaltException.class, (e, req, res) -> {
+            logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
         });
     } // Fin del método main
 
