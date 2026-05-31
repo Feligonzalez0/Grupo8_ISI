@@ -47,11 +47,13 @@ CREATE TABLE IF NOT EXISTS Estudiante (
 );
 
 CREATE TABLE IF NOT EXISTS PlanDeEstudios (
-    cod_plan INTEGER PRIMARY KEY,
-    año INTEGER,
+    cod_plan INTEGER PRIMARY KEY AUTOINCREMENT,
+    año INTEGER NOT NULL,
     vigencia INTEGER NOT NULL,
     años_total INTEGER NOT NULL,
-    cantidad_materias_total INTEGER NOT NULL
+    cantidad_materias_total INTEGER NOT NULL,
+    cod_carrera INTEGER NOT NULL,
+    FOREIGN KEY (cod_carrera) REFERENCES Carrera(cod_carrera)
 );
 
 CREATE TABLE IF NOT EXISTS Materia (
@@ -65,7 +67,7 @@ CREATE TABLE IF NOT EXISTS Materia (
 );
 
 CREATE TABLE IF NOT EXISTS Carrera (
-    cod_carrera INTEGER PRIMARY KEY,
+    cod_carrera INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT,
     descripcion TEXT
 );

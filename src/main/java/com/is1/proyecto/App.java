@@ -7,25 +7,33 @@ import java.util.Map; // Importa los métodos estáticos principales de Spark (g
 
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contraseñas de forma segura.
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.models.Carrera;
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
 import com.is1.proyecto.models.Estudiante;
+import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.Persona;
+import com.is1.proyecto.models.PlanDeEstudios;
 import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
 
 import spark.ModelAndView; // Clase Singleton para la configuración de la base de datos.
 import spark.Request;
 import static spark.Spark.after;
 import static spark.Spark.before; // Modelo de ActiveJDBC que representa la tabla 'users'.
+import static spark.Spark.exception;
 import static spark.Spark.get;
 import static spark.Spark.halt;
+import static spark.Spark.internalServerError;
+import static spark.Spark.notFound;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
-// mvn activejdbc-instrumentation:instrument
-// mvn exec:java "-Dexec.mainClass=com.is1.proyecto.App"
+// mvn clean compile activejdbc-instrumentation:instrument exec:java "-Dexec.mainClass=com.is1.proyecto.App"
+
 /**
  * Clase principal de la aplicación Spark.
  * Configura las rutas, filtros y el inicio del servidor web.
@@ -36,6 +44,7 @@ public class App {
     // serialización/deserialización JSON.
     // Se inicializa una sola vez para ser reutilizada en toda la aplicación.
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     private static void ejecutarScheme() {
     try {
@@ -1409,6 +1418,504 @@ public class App {
 
         }, new MustacheTemplateEngine());
 
+
+        // CRUD plan de estudios
+        // LISTAR
+        get("/admin/planes", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
+            List<Map<String, Object>> planes = new ArrayList<>();
+
+            for (PlanDeEstudios plan : planesDB) {
+                Map<String, Object> planView = new HashMap<>();
+                planView.put("codPlan",    plan.getCod());
+                planView.put("anio",       plan.getAño());
+                planView.put("vigencia",   plan.getVigencia());
+                planView.put("aniosTotal", plan.getAñosTotal());
+                planView.put("cantMaterias", plan.getCantidadMaterias());
+
+                // Nombre de la carrera asociada
+                Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCod());
+                planView.put("nombreCarrera", carrera != null ? carrera.getNombre() : "Sin carrera");
+
+                planes.add(planView);
+            }
+
+            model.put("planes", planes);
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/planes/planesDashboard.mustache");
+        }, new MustacheTemplateEngine());
+
+        // FORMULARIO CREAR
+        get("/admin/planes/agregar", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+
+            // Pasar lista de carreras para el <select>
+            List<Carrera> carrerasDB = Carrera.findAll();
+            List<Map<String, Object>> carreras = new ArrayList<>();
+            for (Carrera c : carrerasDB) {
+                Map<String, Object> cv = new HashMap<>();
+                cv.put("codCarrera", c.getCodigo());
+                cv.put("nombre",     c.getNombre());
+                carreras.add(cv);
+            }
+            model.put("carreras", carreras);
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/planes/agregarPlan.mustache");
+        }, new MustacheTemplateEngine());
+
+        // CREAR
+        post("/admin/planes/agregar", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            String anioStr        = req.queryParams("anio");
+            String vigenciaStr    = req.queryParams("vigencia");
+            String aniosTotalStr  = req.queryParams("anios_total");
+            String cantMatStr     = req.queryParams("cantidad_materias_total");
+            String codCarreraStr  = req.queryParams("cod_carrera");
+
+            // Validar vacíos
+            if (anioStr.isEmpty() || vigenciaStr.isEmpty() || aniosTotalStr.isEmpty()
+                    || cantMatStr.isEmpty() || codCarreraStr.isEmpty()) {
+                res.redirect("/admin/planes/agregar?errorMessage=Todos los campos son obligatorios.");
+                return null;
+            }
+
+            try {
+                int año       = Integer.parseInt(anioStr);
+                int vigencia   = Integer.parseInt(vigenciaStr);
+                int aniosTotal = Integer.parseInt(aniosTotalStr);
+                int cantMat    = Integer.parseInt(cantMatStr);
+                int codCarrera = Integer.parseInt(codCarreraStr);
+
+                // Verificar que la carrera exista
+                Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+                if (carrera == null) {
+                    res.redirect("/admin/planes/agregar?errorMessage=La carrera seleccionada no existe.");
+                    return null;
+                }
+
+                PlanDeEstudios plan = new PlanDeEstudios();
+                plan.setAño(año);
+                plan.setVigencia(vigencia);
+                plan.setAñosTotal(aniosTotal);
+                plan.setCantidadMaterias(cantMat);
+                plan.setCod(codCarrera);
+                plan.saveIt();
+
+                res.redirect("/admin/planes?successMessage=Plan creado correctamente.");
+                return null;
+
+            } catch (NumberFormatException e) {
+                res.redirect("/admin/planes/agregar?errorMessage=Los campos numéricos deben ser números válidos.");
+                return null;
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/planes/agregar?errorMessage=Error al crear el plan: " + e.getMessage());
+                return null;
+            }
+        });
+
+        // FORMULARIO EDITAR
+        get("/admin/planes/:id/edit", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codPlan = Integer.parseInt(req.params(":id"));
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
+            if (plan == null) {
+                res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+                return null;
+            }
+
+            model.put("codPlan",    plan.getCod());
+            model.put("anio",       plan.getAño());
+            model.put("vigencia",   plan.getVigencia());
+            model.put("aniosTotal", plan.getAñosTotal());
+            model.put("cantMaterias", plan.getCantidadMaterias());
+
+            // Lista de carreras para el <select>
+            List<Carrera> carrerasDB = Carrera.findAll();
+            List<Map<String, Object>> carreras = new ArrayList<>();
+            for (Carrera c : carrerasDB) {
+                Map<String, Object> cv = new HashMap<>();
+                cv.put("codCarrera", c.getCodigo());
+                cv.put("nombre",     c.getNombre());
+                cv.put("selected",   c.getCodigo().equals(plan.getCod()));
+                carreras.add(cv);
+            }
+            model.put("carreras", carreras);
+            model.put("errorMessage", req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/planes/editarPlan.mustache");
+        }, new MustacheTemplateEngine());
+
+        // EDITAR
+        post("/admin/planes/:id/edit", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            int codPlan = Integer.parseInt(req.params(":id"));
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
+            if (plan == null) {
+                res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+                return null;
+            }
+
+            String vigenciaStr   = req.queryParams("vigencia");
+            String aniosTotalStr = req.queryParams("anios_total");
+            String cantMatStr    = req.queryParams("cantidad_materias_total");
+            String codCarreraStr = req.queryParams("cod_carrera");
+
+            if (vigenciaStr.isEmpty() || aniosTotalStr.isEmpty()
+                    || cantMatStr.isEmpty() || codCarreraStr.isEmpty()) {
+                res.redirect("/admin/planes/" + codPlan + "/edit?errorMessage=Todos los campos son obligatorios.");
+                return null;
+            }
+
+            try {
+                Base.openTransaction();
+
+                Base.exec(
+                    "UPDATE PlanDeEstudios SET vigencia = ?, años_total = ?, " +
+                    "cantidad_materias_total = ?, cod_carrera = ? WHERE cod_plan = ?",
+                    Integer.parseInt(vigenciaStr),
+                    Integer.parseInt(aniosTotalStr),
+                    Integer.parseInt(cantMatStr),
+                    Integer.parseInt(codCarreraStr),
+                    codPlan
+                );
+
+                Base.commitTransaction();
+                res.redirect("/admin/planes?successMessage=Plan actualizado correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                Base.rollbackTransaction();
+                e.printStackTrace();
+                res.redirect("/admin/planes/" + codPlan + "/edit?errorMessage=Error al actualizar: " + e.getMessage());
+                return null;
+            }
+        });
+
+        // CONFIRMAR ELIMINAR
+        get("/admin/planes/:id/delete", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codPlan = Integer.parseInt(req.params(":id"));
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
+            if (plan == null) {
+                res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+                return null;
+            }
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCod());
+
+            model.put("codPlan",      plan.getCod());
+            model.put("anio",         plan.getAño());
+            model.put("vigencia",     plan.getVigencia());
+            model.put("nombreCarrera", carrera != null ? carrera.getNombre() : "Sin carrera");
+
+            // Listar materias asociadas
+            List<Materia> materiasDB = Materia.where("cod_plan = ?", codPlan);
+            List<Map<String, Object>> materias = new ArrayList<>();
+            for (Materia m : materiasDB) {
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("codMateria", m.getInteger("cod_materia"));
+                mv.put("nombre",     m.getString("nombre"));
+                materias.add(mv);
+            }
+            model.put("materias",      materias);
+            model.put("tieneMaterias", !materias.isEmpty());
+
+            return new ModelAndView(model, "admin/planes/eliminarPlan.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ELIMINAR
+        post("/admin/planes/:id/delete", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            int codPlan = Integer.parseInt(req.params(":id"));
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
+            if (plan == null) {
+                res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+                return null;
+            }
+
+            try {
+                Base.openTransaction();
+
+                // Primero eliminar materias asociadas (integridad referencial)
+                Base.exec("DELETE FROM Materia WHERE cod_plan = ?", codPlan);
+                Base.exec("DELETE FROM PlanDeEstudios WHERE cod_plan = ?", codPlan);
+
+                Base.commitTransaction();
+                res.redirect("/admin/planes?successMessage=Plan eliminado correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                Base.rollbackTransaction();
+                e.printStackTrace();
+                res.redirect("/admin/planes?errorMessage=Error al eliminar el plan.");
+                return null;
+            }
+        });
+
+        // LISTAR MATERIAS DE UN PLAN
+        get("/admin/planes/:id/materias", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codPlan = Integer.parseInt(req.params(":id"));
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
+            if (plan == null) {
+                res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+                return null;
+            }
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCod());
+
+            List<Materia> materiasDB = Materia.where("cod_plan = ?", codPlan);
+            List<Map<String, Object>> materias = new ArrayList<>();
+            for (Materia m : materiasDB) {
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("codMateria",  m.getInteger("cod_materia"));
+                mv.put("nombre",      m.getString("nombre"));
+                mv.put("descripcion", m.getString("descripcion"));
+                materias.add(mv);
+            }
+
+            model.put("codPlan",      plan.getCod());
+            model.put("anio",         plan.getAño());
+            model.put("vigencia",     plan.getVigencia());
+            model.put("nombreCarrera", carrera != null ? carrera.getNombre() : "Sin carrera");
+            model.put("materias",     materias);
+            model.put("sinMaterias",  materias.isEmpty());
+
+            return new ModelAndView(model, "admin/planes/materiasPlan.mustache");
+        }, new MustacheTemplateEngine());
+
+        // CRUD de carreras
+        // LISTAR
+        get("/admin/carreras", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            List<Carrera> carrerasDB = Carrera.findAll();
+            List<Map<String, Object>> carreras = new ArrayList<>();
+
+            for (Carrera c : carrerasDB) {
+                Map<String, Object> cv = new HashMap<>();
+                cv.put("codCarrera",  c.getCodigo());
+                cv.put("nombre",      c.getNombre());
+                cv.put("descripcion", c.getDescripcion());
+                carreras.add(cv);
+            }
+
+            model.put("carreras",       carreras);
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/carreras/carrerasDashboard.mustache");
+        }, new MustacheTemplateEngine());
+
+        // FORMULARIO CREAR
+        get("/admin/carreras/agregar", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/carreras/agregarCarrera.mustache");
+        }, new MustacheTemplateEngine());
+
+        // CREAR
+        post("/admin/carreras/agregar", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            String nombre      = req.queryParams("nombre");
+            String descripcion = req.queryParams("descripcion");
+
+            if (nombre == null || nombre.isEmpty()) {
+                res.redirect("/admin/carreras/agregar?errorMessage=El nombre es obligatorio.");
+                return null;
+            }
+
+            try {
+                Carrera carreraExistente = Carrera.findFirst("nombre = ?", nombre);
+                if (carreraExistente != null) {
+                    res.redirect("/admin/carreras/agregar?errorMessage=Ya existe una carrera con ese nombre.");
+                    return null;
+                }
+
+                Carrera carrera = new Carrera();
+                carrera.setNombre(nombre);
+                carrera.setDescripcion(descripcion);
+                carrera.saveIt();
+
+                res.redirect("/admin/carreras?successMessage=Carrera creada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/carreras/agregar?errorMessage=Error al crear la carrera: " + e.getMessage());
+                return null;
+            }
+        });
+
+        // FORMULARIO EDITAR
+        get("/admin/carreras/:id/edit", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            model.put("codCarrera",   carrera.getCodigo());
+            model.put("nombre",       carrera.getNombre());
+            model.put("descripcion",  carrera.getDescripcion());
+            model.put("errorMessage", req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/carreras/editarCarrera.mustache");
+        }, new MustacheTemplateEngine());
+
+        // EDITAR
+        post("/admin/carreras/:id/edit", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            String nombre      = req.queryParams("nombre");
+            String descripcion = req.queryParams("descripcion");
+
+            if (nombre == null || nombre.isEmpty()) {
+                res.redirect("/admin/carreras/" + codCarrera + "/edit?errorMessage=El nombre es obligatorio.");
+                return null;
+            }
+
+            try {
+                Base.exec(
+                    "UPDATE Carrera SET nombre = ?, descripcion = ? WHERE cod_carrera = ?",
+                    nombre, descripcion, codCarrera
+                );
+
+                res.redirect("/admin/carreras?successMessage=Carrera actualizada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/carreras/" + codCarrera + "/edit?errorMessage=Error al actualizar: " + e.getMessage());
+                return null;
+            }
+        });
+
+        // CONFIRMAR ELIMINAR
+        get("/admin/carreras/:id/delete", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            Map<String, Object> model = new HashMap<>();
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            // Verificar si tiene planes asociados
+            PlanDeEstudios planAsociado = PlanDeEstudios.findFirst("cod_carrera = ?", codCarrera);
+
+            model.put("codCarrera",   carrera.getCodigo());
+            model.put("nombre",       carrera.getNombre());
+            model.put("descripcion",  carrera.getDescripcion());
+            model.put("tienePlanes",  planAsociado != null);
+
+            return new ModelAndView(model, "admin/carreras/eliminarCarrera.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ELIMINAR
+        post("/admin/carreras/:id/delete", (req, res) -> {
+            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+            int codCarrera = Integer.parseInt(req.params(":id"));
+
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if (carrera == null) {
+                res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+                return null;
+            }
+
+            // Bloquear si tiene planes asociados
+            PlanDeEstudios planAsociado = PlanDeEstudios.findFirst("cod_carrera = ?", codCarrera);
+            if (planAsociado != null) {
+                res.redirect("/admin/carreras?errorMessage=No se puede eliminar una carrera con planes asociados.");
+                return null;
+            }
+
+            try {
+                Base.exec("DELETE FROM Carrera WHERE cod_carrera = ?", codCarrera);
+                res.redirect("/admin/carreras?successMessage=Carrera eliminada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/carreras?errorMessage=Error al eliminar la carrera.");
+                return null;
+            }
+        });
+
+        // MANEJO DE ERRORES
+        // 404 (ejemplo: ir a una ruta que no existe)
+        notFound((req, res) -> {
+            res.type("text/html");
+            logger.warn("404 - Ruta no encontrada: {}", req.url());
+            return "<h1>404 - Pagina no encontrada</h1><p>La ruta <b>" + req.url() + "</b> no existe.</p><a href='/'>Volver al inicio</a>";
+        });
+
+        // 500
+        internalServerError((req, res) -> {
+            res.type("text/html");
+            logger.error("500 - Error interno en: {}", req.url());
+            return "<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/'>Volver al inicio</a>";
+        });
+
+        // Excepciones no capturadas
+        exception(Exception.class, (e, req, res) -> {
+            logger.error("Excepción no manejada en {}: {}", req.url(), e.getMessage(), e);
+            res.status(500);
+            res.type("text/html");
+            res.body("<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/'>Volver al inicio</a>");
+        });
+
+        // Acceso no autorizado (ejemplo: intenta entrar a admin sin estar logueado)
+        exception(spark.HaltException.class, (e, req, res) -> {
+            logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
+        });
     } // Fin del método main
 
     // HELPERS

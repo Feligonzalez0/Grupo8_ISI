@@ -6,5 +6,10 @@ com/is1/proyecto/models/Persona.class
 com/is1/proyecto/models/Rol.class
 com/is1/proyecto/models/Estudiante.class
 com/is1/proyecto/models/PlanDeEstudios.class
+<<<<<<< HEAD
 com/is1/proyecto/models/Carrera.class
 com/is1/proyecto/models/Docente.class
+=======
+com/is1/proyecto/models/Docente.class
+com/is1/proyecto/models/Carrera.class
+>>>>>>> 7e125ff8f7a81f8a0a9433947d804eb98d877c4f

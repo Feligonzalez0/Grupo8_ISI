@@ -1,6 +1,5 @@
 package com.is1.proyecto.models;
 import org.javalite.activejdbc.Model;
-
 import org.javalite.activejdbc.annotations.Table;
 
 @Table("Carrera")
@@ -24,7 +23,7 @@ public class Carrera extends Model {
         return getString("nombre"); // Obtiene el valor de la columna "nombre"
     }
 
-    public void setNombre(Integer nombre) {
+    public void setNombre(String nombre) {
         set("nombre", nombre); // Establece el valor para la columna "nombre"
     }
 
