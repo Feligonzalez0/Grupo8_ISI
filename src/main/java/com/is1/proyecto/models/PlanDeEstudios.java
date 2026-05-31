@@ -20,7 +20,7 @@ public class PlanDeEstudios extends Model{
         return getInteger("año");
     }
 
-    public void setAño(Date año) {
+    public void setAño(Integer año) {
         set("año", año);
     }
 
