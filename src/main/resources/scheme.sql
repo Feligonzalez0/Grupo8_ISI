@@ -71,3 +71,14 @@ CREATE TABLE IF NOT EXISTS Carrera (
     nombre TEXT,
     descripcion TEXT
 );
+
+CREATE TABLE IF NOT EXISTS PeriodoAcademico (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_profesor INTEGER NOT NULL,
+    cod_materia INTEGER NOT NULL,
+    fecha TEXT NOT NULL,
+    cargo TEXT NOT NULL CHECK (cargo IN ('Responsable_de_Catedra', 'Jefe_de_Trabajos_Practicos', 'Ayudante')),
+
+    FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor),
+    FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)
+);

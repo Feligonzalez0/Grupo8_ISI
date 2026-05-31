@@ -16,15 +16,16 @@ import com.is1.proyecto.models.Carrera;
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
 import com.is1.proyecto.models.Estudiante;
 import com.is1.proyecto.models.Materia;
+import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
 import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
 
-import spark.ModelAndView; // Clase Singleton para la configuración de la base de datos.
-import spark.Request;
+import spark.ModelAndView;
+import spark.Request; // Clase Singleton para la configuración de la base de datos.
 import static spark.Spark.after;
-import static spark.Spark.before; // Modelo de ActiveJDBC que representa la tabla 'users'.
-import static spark.Spark.exception;
+import static spark.Spark.before;
+import static spark.Spark.exception; // Modelo de ActiveJDBC que representa la tabla 'users'.
 import static spark.Spark.get;
 import static spark.Spark.halt;
 import static spark.Spark.internalServerError;
@@ -1888,7 +1889,7 @@ public class App {
                 return null;
             }
         });
-
+        
         // MANEJO DE ERRORES
         // 404 (ejemplo: ir a una ruta que no existe)
         notFound((req, res) -> {
@@ -1916,6 +1917,123 @@ public class App {
         exception(spark.HaltException.class, (e, req, res) -> {
             logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
         });
+
+    // ASIGNAR MATERIAS A DOCENTES
+    // VER MATERIAS DEL DOCENTE
+    get("/admin/docentes/:id/materias", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        Map<String, Object> model = new HashMap<>();
+        int codigoProfesor = Integer.parseInt(req.params(":id"));
+
+        Docente docente = Docente.findFirst("codigo_profesor = ?", codigoProfesor);
+        if (docente == null) {
+            res.redirect("/admin/docentes?errorMessage=Docente no encontrado.");
+            return null;
+        }
+
+        Persona persona = Persona.findFirst("dni = ?", docente.getInteger("dni"));
+
+        // Materias asignadas
+        List<PeriodoAcademico> asignacionesDB = PeriodoAcademico.where("codigo_profesor = ?", codigoProfesor);
+        List<Map<String, Object>> asignaciones = new ArrayList<>();
+        for (PeriodoAcademico pa : asignacionesDB) {
+            Map<String, Object> av = new HashMap<>();
+            av.put("id",    pa.getId());
+            av.put("fecha", pa.getFecha());
+            av.put("cargo", pa.getCargo().replace("_", " "));
+            Materia materia = Materia.findFirst("cod_materia = ?", pa.getCodMateria());
+            av.put("nombreMateria", materia != null ? materia.getNombre() : "Sin materia");
+            asignaciones.add(av);
+        }
+
+        // Materias disponibles (sin asignar a este docente)
+        List<Materia> todasMaterias = Materia.findAll();
+        List<Map<String, Object>> materiasDisponibles = new ArrayList<>();
+        for (Materia m : todasMaterias) {
+            PeriodoAcademico ya = PeriodoAcademico.findFirst(
+                "codigo_profesor = ? AND cod_materia = ?", codigoProfesor, m.getCodMateria()
+            );
+            if (ya == null) {
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("codMateria", m.getCodMateria());
+                mv.put("nombre",     m.getNombre());
+                materiasDisponibles.add(mv);
+            }
+        }
+
+        model.put("codigoProfesor",     codigoProfesor);
+        model.put("nombreDocente",      persona != null ? persona.getString("nombre") + " " + persona.getString("apellido") : "Sin nombre");
+        model.put("asignaciones",       asignaciones);
+        model.put("sinAsignaciones",    asignaciones.isEmpty());
+        model.put("materiasDisponibles", materiasDisponibles);
+        model.put("sinMaterias",        materiasDisponibles.isEmpty());
+        model.put("successMessage",     req.queryParams("successMessage"));
+        model.put("errorMessage",       req.queryParams("errorMessage"));
+
+        return new ModelAndView(model, "admin/docentes/materiasDocente.mustache");
+    }, new MustacheTemplateEngine());
+
+    // ASIGNAR MATERIA AL DOCENTE
+    post("/admin/docentes/:id/materias/agregar", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        int codigoProfesor = Integer.parseInt(req.params(":id"));
+        String codMateriaStr = req.queryParams("cod_materia");
+        String fecha         = req.queryParams("fecha");
+        String cargo         = req.queryParams("cargo");
+
+        if (codMateriaStr == null || codMateriaStr.isEmpty() || fecha.isEmpty() || cargo.isEmpty()) {
+            res.redirect("/admin/docentes/" + codigoProfesor + "/materias?errorMessage=Todos los campos son obligatorios.");
+            return null;
+        }
+
+        try {
+            int codMateria = Integer.parseInt(codMateriaStr);
+
+            PeriodoAcademico existente = PeriodoAcademico.findFirst(
+                "codigo_profesor = ? AND cod_materia = ?", codigoProfesor, codMateria
+            );
+            if (existente != null) {
+                res.redirect("/admin/docentes/" + codigoProfesor + "/materias?errorMessage=Ese docente ya está asignado a esa materia.");
+                return null;
+            }
+
+            PeriodoAcademico pa = new PeriodoAcademico();
+            pa.setCodigoProfesor(codigoProfesor);
+            pa.setCodMateria(codMateria);
+            pa.setFecha(fecha);
+            pa.setCargo(cargo);
+            pa.saveIt();
+
+            res.redirect("/admin/docentes/" + codigoProfesor + "/materias?successMessage=Materia asignada correctamente.");
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.redirect("/admin/docentes/" + codigoProfesor + "/materias?errorMessage=Error al asignar materia.");
+            return null;
+        }
+    });
+
+    // QUITAR MATERIA DEL DOCENTE
+    post("/admin/docentes/:id/materias/:asignacionId/delete", (req, res) -> {
+        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
+
+        int codigoProfesor = Integer.parseInt(req.params(":id"));
+        int asignacionId   = Integer.parseInt(req.params(":asignacionId"));
+
+        try {
+            Base.exec("DELETE FROM PeriodoAcademico WHERE id = ? AND codigo_profesor = ?", asignacionId, codigoProfesor);
+            res.redirect("/admin/docentes/" + codigoProfesor + "/materias?successMessage=Materia quitada correctamente.");
+            return null;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            res.redirect("/admin/docentes/" + codigoProfesor + "/materias?errorMessage=Error al quitar la materia.");
+            return null;
+        }
+    });
     } // Fin del método main
 
     // HELPERS
