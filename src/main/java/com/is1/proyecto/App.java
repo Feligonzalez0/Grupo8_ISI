@@ -1,7 +1,6 @@
 package com.is1.proyecto; // Define el paquete de la aplicación, debe coincidir con la estructura de carpetas.
 
 import java.util.ArrayList;
-// Importaciones necesarias para la aplicación Spark
 import java.util.HashMap; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
 import java.util.List;
 import java.util.Map; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
@@ -12,12 +11,12 @@ import org.mindrot.jbcrypt.BCrypt; // Utilidad para hashear y verificar contrase
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
+import com.is1.proyecto.models.Estudiante;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
 
 import spark.ModelAndView; // Clase Singleton para la configuración de la base de datos.
 import spark.Request;
-
 import static spark.Spark.after;
 import static spark.Spark.before; // Modelo de ActiveJDBC que representa la tabla 'users'.
 import static spark.Spark.get;
@@ -841,8 +840,574 @@ public class App {
 
                 return null;
             }
+        });
+            // VER LISTADO
+             get("/admin/docentes/listado", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            List<Docente> docentesDB = Docente.findAll();
+
+            List<Map<String, Object>> docentes = new ArrayList<>();
+
+            for (Docente docente : docentesDB) {
+
+                Map<String, Object> docenteView = new HashMap<>();
+                
+                // DATOS DOCENTE
+                docenteView.put("id", docente.getInteger("codigo_profesor"));
+                docenteView.put("email", docente.getString("email"));
+
+                // PERSONA
+                Integer dni = docente.getInteger("dni");
+
+                Persona persona = Persona.findFirst("dni = ?", dni);
+
+                if (persona != null) {
+                    docenteView.put("dni", persona.getInteger("dni"));
+                    docenteView.put("nombre",persona.getString("nombre"));
+                    docenteView.put("apellido", persona.getString("apellido"));
+                    docenteView.put("telefono", persona.getString("telefono"));
+                    docenteView.put("direccion", persona.getString("direccion"));
+                    docenteView.put("fecha_nacimiento",persona.getString("fecha_nacimiento"));
+                }
+                
+                // USER
+                Integer userId = docente.getInteger("user_id");
+                User user = User.findById(userId);
+
+                if (user != null) {
+                    docenteView.put("username", user.getString("name"));
+                }
+
+                docentes.add(docenteView);
+            }
+
+            model.put("docentes", docentes);
+
+            model.put(
+                    "successMessage",
+                    req.queryParams("successMessage")
+            );
+
+            model.put(
+                    "errorMessage",
+                    req.queryParams("errorMessage")
+            );
+
+            return new ModelAndView(model, "admin/docentes/listadoDocentes.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        //! ESTUDIANTES
+        post("/estudiante/new", (req, res) -> {
+
+            String nombre = req.queryParams("nombre");
+            String apellido = req.queryParams("apellido");
+            String dniString = req.queryParams("dni");
+            String email = req.queryParams("email");
+
+            // NUEVOS DATOS
+            String fechaNacimiento = req.queryParams("fecha_nacimiento");
+            String telefono = req.queryParams("telefono");
+            String direccion = req.queryParams("direccion");
+            String nroLegajoString = req.queryParams("nro_legajo");    
+
+            // USER ASOCIADO
+            String username = req.queryParams("username");
+
+
+
+            // =========================
+            // VALIDACIONES
+            // =========================
+
+            if (
+                dniString.isEmpty() ||
+                nombre.isEmpty() ||
+                apellido.isEmpty() ||
+                email.isEmpty() ||
+                fechaNacimiento.isEmpty() ||
+                telefono.isEmpty() ||
+                direccion.isEmpty() ||
+                username.isEmpty() ||
+                nroLegajoString.isEmpty()
+            ) {
+
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Todos los campos son obligatorios.");
+                return null;
+            }
+
+            // Email válido
+            if (!esEmailValido(email)) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Ingrese un email valido.");
+                return null;
+            }
+
+            // Email repetido
+            Estudiante estudianteExistete = Estudiante.findFirst("email = ?", email);
+
+            if (estudianteExistete != null) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Ya existe un estudiante con ese email.");
+                return null;
+            }
+
+            // Verificar que exista el user
+            User usuarioExistente = User.findFirst("name = ?", username);
+
+            if (usuarioExistente == null) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=No existe un usuario con ese nombre.");
+                return null;
+            }
+
+            // Verificar que el usuario no esté asociado a otro docente
+            Estudiante estudianteConUsuario = Estudiante.findFirst("user_id = ?", usuarioExistente.getId());
+
+            if (estudianteConUsuario != null) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Ese usuario ya esta asociado a otro estudiante.");
+                return null;
+            }
+            
+            // Verificar que el user NO es ADMIN
+            if ("ADMINISTRADOR".equals(usuarioExistente.getString("rol"))) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=No puedes asignar un administrador como estudiante.");
+                return null;
+            }
+            
+            // VALIDAR NUMEROS VALIDOS
+            Integer dni;
+            Integer nro_legajo;
+            try {
+                dni = Integer.parseInt(dniString);
+                nro_legajo = Integer.parseInt(nroLegajoString);
+            } catch (NumberFormatException e) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=DNI debe ser un numero valido.");
+                return null;
+            }
+
+            // VALIDAR DNI NO REPETIDO
+            Persona personaExistente = Persona.findFirst("dni = ?", dni);
+            if (personaExistente != null) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Ya existe una persona registrada con ese DNI.");
+                return null;
+            }
+
+            //  VALIDAR NRO LEGAJO NO REPETIDO
+            if (Estudiante.findFirst("nro_legajo = ?", nro_legajo) != null) {
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Ya existe un estudiante con ese legajo.");
+                return null;
+            }   
+
+            try {                
+                // =========================
+                // CREAR PERSONA
+                // =========================
+
+                Persona persona = new Persona();
+
+                persona.setDNI(dni);
+                persona.setNombre(nombre);
+                persona.setApellido(apellido);
+
+                persona.setFechaNacimiento(fechaNacimiento);
+                persona.setTelefono(telefono);
+                persona.setDireccion(direccion);
+                
+                // =========================
+                // CREAR ESTUDIANTE
+                // =========================
+
+                Estudiante estudiante = new Estudiante();
+
+                estudiante.setDNI(dni);
+                estudiante.setEmail(email);
+                estudiante.setNroLeg(nro_legajo);
+
+                // Asociar user
+                estudiante.set("user_id", usuarioExistente.getId());
+
+                // Guardar estudiante
+                estudiante.saveIt();
+
+                // Actualizar rol
+                usuarioExistente.set("rol", "ALUMNO");
+                usuarioExistente.saveIt();
+                persona.saveIt();
+                res.redirect("/admin/estudiantes/agregar?successMessage=Estudiante agregado correctamente.");
+                return null;
+            } catch (Exception e) {
+
+                String msg = e.getMessage();
+
+                if (msg != null && msg.contains("UNIQUE constraint failed: Persona.dni")) {
+
+                    res.redirect("/admin/estudiantes/agregar?errorMessage=Ya existe una persona registrada con ese DNI.");
+                    return null;
+                }
+
+                res.redirect("/admin/estudiantes/agregar?errorMessage=Error al agregar estudiante: " + msg);
+                return null;
+            }
+        });
+
+        // Con esto podemos hacer localhost:puerto/admin/docentes/agregar
+        get("/admin/estudiantes/agregar", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+        
+            // Intenta obtener el nombre de usuario y la bandera de login de la sesión.
+            String currentUsername = req.session().attribute("currentUserUsername");
+            Boolean loggedIn = req.session().attribute("loggedIn");
+
+            // 1. Verificar si el usuario ha iniciado sesión.
+            // Si no hay un nombre de usuario en la sesión, la bandera es nula o falsa,
+            // significa que el usuario no está logueado o su sesión expiró.
+            if (currentUsername == null || loggedIn == null || !loggedIn) {
+                System.out.println("DEBUG: Acceso no autorizado a /agregarEstudiante. Redirigiendo a /login.");
+                // Redirige al login con un mensaje de error.
+                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                return null; // Importante retornar null después de una redirección.
+            }
+
+            // Verificar que el usuario sea administrador.
+            String userRol = req.session().attribute("userRol");
+            if (!"ADMINISTRADOR".equals(userRol)) {
+                System.out.println("DEBUG: Acceso denegado a /agregarEstudiante. Usuario no es admin.");
+                res.redirect("/dashboard?error=No tienes permisos para acceder a esta página.");
+                return null;
+            }
+
+            // Obtener y añadir mensaje de éxito de los query parameters (ej.
+            // ?message=Cuenta creada!)
+            String successMessage = req.queryParams("successMessage");
+            if (successMessage != null && !successMessage.isEmpty()) {
+                model.put("successMessage", successMessage);
+            }
+
+            // Obtener y añadir mensaje de error de los query parameters (ej. ?error=Campos
+            // vacíos)
+            String errorMessage = req.queryParams("errorMessage");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
+
+            // Inicializamos variables
+            model.put("dni", "");
+            model.put("nombre", "");
+            model.put("apellido", "");
+            model.put("email", "");
+
+            model.put("fecha_nacimiento", "");
+            model.put("telefono", "");
+            model.put("direccion", "");
+            model.put("username", "");
+
+            // Renderizamos la plantilla
+            return new ModelAndView(model, "admin/estudiantes/agregarEstudiante.mustache");
+        }, new MustacheTemplateEngine());
+        
+        // ==========================
+        //  DASHBOARD ADMINISTRACIÓN
+        // ==========================
+
+        get("/admin", (req, res) -> {
+            if (!isAdmin(req)) {
+                res.redirect("/dashboard");
+                return null;
+            }
+
+            return new ModelAndView(new HashMap<>(), "admin/adminDashboard.mustache");
+
+        }, new MustacheTemplateEngine());
+
+
+
+
+        //! ESTUDIANTES
+        get("/admin/estudiantes", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            List<Estudiante> estudiantesDB = Estudiante.findAll();
+
+            List<Map<String, Object>> estudiantes = new ArrayList<>();
+
+            for (Estudiante estudiante : estudiantesDB) {
+
+                Map<String, Object> estudianteView = new HashMap<>();
+                
+                // DATOS ESTUDIANTE
+                estudianteView.put("id", estudiante.getInteger("nro_legajo"));
+
+                estudianteView.put("email", estudiante.getString("email"));
+
+                // PERSONA
+                Integer dni = estudiante.getInteger("dni");
+
+                Persona persona = Persona.findFirst("dni = ?", dni);
+
+                if (persona != null) {
+                    estudianteView.put("dni", persona.getInteger("dni"));
+                    estudianteView.put("nombre",persona.getString("nombre"));
+                    estudianteView.put("apellido", persona.getString("apellido"));
+                    estudianteView.put("telefono", persona.getString("telefono"));
+                    estudianteView.put("direccion", persona.getString("direccion"));
+                }
+                
+                // USER
+                Integer userId = estudiante.getInteger("user_id");
+                User user = User.findById(userId);
+
+                if (user != null) {
+                    estudianteView.put("username", user.getString("name"));
+                }
+
+                estudiantes.add(estudianteView);
+            }
+
+            model.put("estudiantes", estudiantes);
+
+            model.put(
+                    "successMessage",
+                    req.queryParams("successMessage")
+            );
+
+            model.put(
+                    "errorMessage",
+                    req.queryParams("errorMessage")
+            );
+
+            return new ModelAndView(model,"admin/estudiantes/estudiantesDashboard.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        get("/admin/estudiantes/:id/edit", (req, res) -> {
+
+            Map<String, Object> model = new HashMap<>();
+
+            Integer nro_legajo = Integer.parseInt(req.params(":id"));
+            
+            // ESTUDIANTE
+            Estudiante estudiante = Estudiante.findFirst("nro_legajo = ?", nro_legajo);
+
+            if (estudiante == null) {
+                res.redirect("/admin/estudiantes?errorMessage=Error: estudiante no encontrado");
+                return null;
+            }
+
+            // PERSONA
+            Integer dni = estudiante.getInteger("dni");
+
+            Persona persona = Persona.findFirst("dni = ?", dni);
+
+            // MODEL
+            model.put("nro_legajo", estudiante.getInteger("nro_legajo"));
+            model.put("email", estudiante.getString("email"));
+            model.put("dni", persona.getInteger("dni"));
+            model.put("nombre", persona.getString("nombre"));
+            model.put("apellido", persona.getString("apellido"));
+            model.put("fechaNacimiento", persona.getString("fecha_nacimiento"));
+            model.put("telefono", persona.getString("telefono"));
+            model.put("direccion",persona.getString("direccion"));
+
+            return new ModelAndView(model,"admin/estudiantes/editarEstudiante.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        post("/admin/estudiantes/:id/edit", (req, res) -> {
+
+            Integer nro_legajo = Integer.parseInt(req.params(":id"));
+
+            Estudiante estudiante = Estudiante.findFirst("nro_legajo = ?", nro_legajo);
+
+            if (estudiante == null) {
+
+                res.redirect(
+                        "/admin/estudiantes?errorMessage=Estudiante no encontrado"
+                );
+
+                return null;
+            }
+
+            Integer dni = estudiante.getInteger("dni");
+
+            // FORM
+            String nombre = req.queryParams("nombre");
+            String apellido = req.queryParams("apellido");
+            String fechaNacimiento = req.queryParams("fecha_nacimiento");
+            String telefono = req.queryParams("telefono");
+            String direccion = req.queryParams("direccion");
+            String email = req.queryParams("email");
+            String nroLegajoString = req.queryParams("nro_legajo");
+
+            try {
+
+                Base.openTransaction();
+                
+                // UPDATE PERSONA
+                Base.exec(
+                        "UPDATE Persona " +
+                        "SET nombre = ?, apellido = ?, fecha_nacimiento = ?, telefono = ?, direccion = ? " +
+                        "WHERE dni = ?",
+
+                        nombre,
+                        apellido,
+                        fechaNacimiento,
+                        telefono,
+                        direccion,
+                        dni
+                );
+                
+                // UPDATE ESTUDIANTE
+                Base.exec(
+                        "UPDATE Estudiante SET email = ? WHERE nro_legajo = ?",
+                        email,
+                        nro_legajo
+                );
+
+                Base.commitTransaction();
+
+                res.redirect(
+                        "/admin/estudiantes?successMessage=Estudiante actualizado correctamente"
+                );
+
+                return null;
+
+            } catch (Exception e) {
+
+                Base.rollbackTransaction();
+
+                e.printStackTrace();
+
+                res.redirect(
+                        "/admin/estudiantes/" + nro_legajo + "/edit?errorMessage=Error al actualizar estudiante");
+
+                return null;
+            }
 
         });
+
+        get("/admin/estudiantes/:id/delete", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            Integer nro_legajo = Integer.parseInt(req.params(":id"));
+
+            Estudiante estudiante = Estudiante.findFirst("nro_legajo = ?", nro_legajo);
+
+            if (estudiante == null) {
+                res.redirect("/admin/estudiantes?errorMessage=Estudiante no encontrado");
+                return null;
+            }
+
+            Integer dni = estudiante.getInteger("dni");
+
+            Persona persona = Persona.findFirst("dni = ?", dni);
+
+            Integer userId = estudiante.getInteger("user_id");
+
+            User user = User.findById(userId);
+
+            model.put("nro_legajo", nro_legajo);
+            model.put("email", estudiante.getString("email"));
+
+            if (persona != null) {
+                model.put("dni", persona.getInteger("dni"));
+                model.put("nombre", persona.getString("nombre"));
+                model.put("apellido", persona.getString("apellido"));
+            }
+
+            if (user != null) {
+                model.put("username", user.getString("name"));
+            }
+
+            return new ModelAndView(model, "admin/estudiantes/eliminarEstudiante.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        post("/admin/estudiantes/:id/delete", (req, res) -> {
+
+            Integer nro_legajo = Integer.parseInt(req.params(":id"));
+
+            Estudiante estudiante = Estudiante.findFirst("nro_legajo = ?", nro_legajo);
+            if (estudiante == null) {
+                res.redirect("/admin/estudiantes?errorMessage=Estudiante no encontrado");
+                return null;
+            }
+
+            Integer dni = estudiante.getInteger("dni");
+            Integer userId = estudiante.getInteger("user_id");
+
+            User user = User.findById(userId);
+
+            try {
+                Base.openTransaction();
+
+                // ELIMINAR ESTUDIANTE
+                Base.exec("DELETE FROM Estudiante WHERE nro_legajo = ?", nro_legajo);
+
+                // ELIMINAR PERSONA
+                Base.exec("DELETE FROM Persona WHERE dni = ?", dni);
+
+                // RESET ROL USER
+                if (user != null) {
+                    user.set("rol", "UNASSIGNED");
+                    user.saveIt();
+                }
+
+                Base.commitTransaction();
+
+                res.redirect("/admin/estudiantes?successMessage=Estudiante eliminado correctamente");
+
+                return null;
+
+            } catch (Exception e) {
+                Base.rollbackTransaction();
+                e.printStackTrace();
+                res.redirect("/admin/estudiantes?errorMessage=Error al eliminar estudiante");
+
+                return null;
+            }
+
+        });
+
+        get("/admin/estudiantes/listado", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            List<Estudiante> estudiantesDB = Estudiante.findAll();
+            List<Map<String, Object>> estudiantes = new ArrayList<>();
+
+            for (Estudiante estudiante : estudiantesDB) {
+
+                Map<String, Object> estudianteView = new HashMap<>();
+
+                estudianteView.put("id", estudiante.getInteger("nro_legajo"));
+                estudianteView.put("email", estudiante.getString("email"));
+
+                Integer dni = estudiante.getInteger("dni");
+
+                Persona persona = Persona.findFirst("dni = ?", dni);
+
+                if (persona != null) {
+                    estudianteView.put("dni", persona.getInteger("dni"));
+                    estudianteView.put("nombre", persona.getString("nombre"));
+                    estudianteView.put("apellido", persona.getString("apellido"));
+                    estudianteView.put("telefono", persona.getString("telefono")); 
+                    estudianteView.put("direccion", persona.getString("direccion"));
+                    estudianteView.put("fecha_nacimiento", persona.getString("fecha_nacimiento"));
+                }
+
+                Integer userId = estudiante.getInteger("user_id");
+
+                User user = User.findById(userId);
+
+                if (user != null) {
+                    estudianteView.put("username", user.getString("name"));
+                }
+
+                estudiantes.add(estudianteView);
+            }
+
+            model.put("estudiantes", estudiantes);
+
+            return new ModelAndView(model,"admin/estudiantes/listadoEstudiantes.mustache");
+
+        }, new MustacheTemplateEngine());
 
     } // Fin del método main
 
