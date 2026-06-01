@@ -19,6 +19,7 @@ import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
+import com.is1.proyecto.models.Rol;
 import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
 
 import spark.ModelAndView;
@@ -98,6 +99,20 @@ public class App {
             }
         });
         
+        before("/admin/*", (req, res) -> {
+            if (!isAdmin(req)) {
+                res.redirect("/dashboard?error=Debes ser administrador para acceder a esta pagina.");
+                halt();
+            }
+        });
+        
+        before("/admin", (req, res) -> {
+            if (!isAdmin(req)) {
+                res.redirect("/dashboard?error=Debes ser administrador para acceder a esta pagina.");
+                halt();
+            }
+        });
+        
         try {
             Base.open(
                 dbConfig.getDriver(),
@@ -167,7 +182,7 @@ public class App {
             if (currentUsername == null || loggedIn == null || !loggedIn) {
                 System.out.println("DEBUG: Acceso no autorizado a /dashboard. Redirigiendo a /login.");
                 // Redirige al login con un mensaje de error.
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
+                res.redirect("/?error=Debes iniciar sesion para acceder a esta pagina.");
                 return null; // Importante retornar null después de una redirección.
             }
 
@@ -199,7 +214,12 @@ public class App {
                     break;
                 default: rolClass = "bg-gray-100 text-gray-700";
             }
-        model.put("rolClass", rolClass);
+            model.put("rolClass", rolClass);
+            
+            String errorMessage = req.queryParams("error");
+            if (errorMessage != null && !errorMessage.isEmpty()) {
+                model.put("errorMessage", errorMessage);
+            }
             // 3. Renderiza la plantilla del dashboard con el nombre de usuario.
             return new ModelAndView(model, "dashboard.mustache");
         }, new MustacheTemplateEngine()); // Especifica el motor de plantillas para esta ruta.
@@ -540,28 +560,6 @@ public class App {
         get("/admin/docentes/agregar", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
         
-            // Intenta obtener el nombre de usuario y la bandera de login de la sesión.
-            String currentUsername = req.session().attribute("currentUserUsername");
-            Boolean loggedIn = req.session().attribute("loggedIn");
-
-            // 1. Verificar si el usuario ha iniciado sesión.
-            // Si no hay un nombre de usuario en la sesión, la bandera es nula o falsa,
-            // significa que el usuario no está logueado o su sesión expiró.
-            if (currentUsername == null || loggedIn == null || !loggedIn) {
-                System.out.println("DEBUG: Acceso no autorizado a /agregarDocente. Redirigiendo a /login.");
-                // Redirige al login con un mensaje de error.
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
-                return null; // Importante retornar null después de una redirección.
-            }
-
-            // Verificar que el usuario sea administrador.
-            String userRol = req.session().attribute("userRol");
-            if (!"ADMINISTRADOR".equals(userRol)) {
-                System.out.println("DEBUG: Acceso denegado a /agregarDocente. Usuario no es admin.");
-                res.redirect("/dashboard?error=No tienes permisos para acceder a esta página.");
-                return null;
-            }
-
             // Obtener y añadir mensaje de éxito de los query parameters (ej.
             // ?message=Cuenta creada!)
             String successMessage = req.queryParams("successMessage");
@@ -596,11 +594,6 @@ public class App {
         // ==========================
 
         get("/admin", (req, res) -> {
-            if (!isAdmin(req)) {
-                res.redirect("/dashboard");
-                return null;
-            }
-
             return new ModelAndView(new HashMap<>(), "admin/adminDashboard.mustache");
 
         }, new MustacheTemplateEngine());
@@ -851,8 +844,9 @@ public class App {
                 return null;
             }
         });
-            // VER LISTADO
-             get("/admin/docentes/listado", (req, res) -> {
+        
+        // VER LISTADO
+        get("/admin/docentes/listado", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
 
             List<Docente> docentesDB = Docente.findAll();
@@ -1063,28 +1057,6 @@ public class App {
         get("/admin/estudiantes/agregar", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
         
-            // Intenta obtener el nombre de usuario y la bandera de login de la sesión.
-            String currentUsername = req.session().attribute("currentUserUsername");
-            Boolean loggedIn = req.session().attribute("loggedIn");
-
-            // 1. Verificar si el usuario ha iniciado sesión.
-            // Si no hay un nombre de usuario en la sesión, la bandera es nula o falsa,
-            // significa que el usuario no está logueado o su sesión expiró.
-            if (currentUsername == null || loggedIn == null || !loggedIn) {
-                System.out.println("DEBUG: Acceso no autorizado a /agregarEstudiante. Redirigiendo a /login.");
-                // Redirige al login con un mensaje de error.
-                res.redirect("/login?error=Debes iniciar sesión para acceder a esta página.");
-                return null; // Importante retornar null después de una redirección.
-            }
-
-            // Verificar que el usuario sea administrador.
-            String userRol = req.session().attribute("userRol");
-            if (!"ADMINISTRADOR".equals(userRol)) {
-                System.out.println("DEBUG: Acceso denegado a /agregarEstudiante. Usuario no es admin.");
-                res.redirect("/dashboard?error=No tienes permisos para acceder a esta página.");
-                return null;
-            }
-
             // Obtener y añadir mensaje de éxito de los query parameters (ej.
             // ?message=Cuenta creada!)
             String successMessage = req.queryParams("successMessage");
@@ -1113,23 +1085,6 @@ public class App {
             // Renderizamos la plantilla
             return new ModelAndView(model, "admin/estudiantes/agregarEstudiante.mustache");
         }, new MustacheTemplateEngine());
-        
-        // ==========================
-        //  DASHBOARD ADMINISTRACIÓN
-        // ==========================
-
-        get("/admin", (req, res) -> {
-            if (!isAdmin(req)) {
-                res.redirect("/dashboard");
-                return null;
-            }
-
-            return new ModelAndView(new HashMap<>(), "admin/adminDashboard.mustache");
-
-        }, new MustacheTemplateEngine());
-
-
-
 
         //! ESTUDIANTES
         get("/admin/estudiantes", (req, res) -> {
@@ -1423,8 +1378,6 @@ public class App {
         // CRUD plan de estudios
         // LISTAR
         get("/admin/planes", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
             List<Map<String, Object>> planes = new ArrayList<>();
@@ -1453,8 +1406,6 @@ public class App {
 
         // FORMULARIO CREAR
         get("/admin/planes/agregar", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
 
             // Pasar lista de carreras para el <select>
@@ -1475,8 +1426,6 @@ public class App {
 
         // CREAR
         post("/admin/planes/agregar", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             String anioStr        = req.queryParams("anio");
             String vigenciaStr    = req.queryParams("vigencia");
             String aniosTotalStr  = req.queryParams("anios_total");
@@ -1525,8 +1474,6 @@ public class App {
 
         // FORMULARIO EDITAR
         get("/admin/planes/:id/edit", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             int codPlan = Integer.parseInt(req.params(":id"));
 
@@ -1568,8 +1515,6 @@ public class App {
 
         // EDITAR
         post("/admin/planes/:id/edit", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             int codPlan = Integer.parseInt(req.params(":id"));
 
             PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
@@ -1616,8 +1561,6 @@ public class App {
 
         // CONFIRMAR ELIMINAR
         get("/admin/planes/:id/delete", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             int codPlan = Integer.parseInt(req.params(":id"));
 
@@ -1651,8 +1594,6 @@ public class App {
 
         // ELIMINAR
         post("/admin/planes/:id/delete", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             int codPlan = Integer.parseInt(req.params(":id"));
 
             PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", codPlan);
@@ -1682,8 +1623,6 @@ public class App {
 
         // LISTAR MATERIAS DE UN PLAN
         get("/admin/planes/:id/materias", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             int codPlan = Integer.parseInt(req.params(":id"));
 
@@ -1718,8 +1657,6 @@ public class App {
         // CRUD de carreras
         // LISTAR
         get("/admin/carreras", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             List<Carrera> carrerasDB = Carrera.findAll();
             List<Map<String, Object>> carreras = new ArrayList<>();
@@ -1741,8 +1678,6 @@ public class App {
 
         // FORMULARIO CREAR
         get("/admin/carreras/agregar", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             model.put("successMessage", req.queryParams("successMessage"));
             model.put("errorMessage",   req.queryParams("errorMessage"));
@@ -1752,8 +1687,6 @@ public class App {
 
         // CREAR
         post("/admin/carreras/agregar", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             String nombre      = req.queryParams("nombre");
             String descripcion = req.queryParams("descripcion");
 
@@ -1786,8 +1719,6 @@ public class App {
 
         // FORMULARIO EDITAR
         get("/admin/carreras/:id/edit", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             int codCarrera = Integer.parseInt(req.params(":id"));
 
@@ -1807,8 +1738,6 @@ public class App {
 
         // EDITAR
         post("/admin/carreras/:id/edit", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             int codCarrera = Integer.parseInt(req.params(":id"));
 
             Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
@@ -1843,8 +1772,6 @@ public class App {
 
         // CONFIRMAR ELIMINAR
         get("/admin/carreras/:id/delete", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             Map<String, Object> model = new HashMap<>();
             int codCarrera = Integer.parseInt(req.params(":id"));
 
@@ -1867,8 +1794,6 @@ public class App {
 
         // ELIMINAR
         post("/admin/carreras/:id/delete", (req, res) -> {
-            if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
             int codCarrera = Integer.parseInt(req.params(":id"));
 
             Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
@@ -1898,17 +1823,18 @@ public class App {
         
         // MANEJO DE ERRORES
         // 404 (ejemplo: ir a una ruta que no existe)
+        
         notFound((req, res) -> {
             res.type("text/html");
             logger.warn("404 - Ruta no encontrada: {}", req.url());
-            return "<h1>404 - Pagina no encontrada</h1><p>La ruta <b>" + req.url() + "</b> no existe.</p><a href='/'>Volver al inicio</a>";
+            return "<h1>404 - Pagina no encontrada</h1><p>La ruta <b>" + req.url() + "</b> no existe.</p><a href='/dashboard'>Volver al inicio</a>";
         });
 
         // 500
         internalServerError((req, res) -> {
             res.type("text/html");
             logger.error("500 - Error interno en: {}", req.url());
-            return "<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/'>Volver al inicio</a>";
+            return "<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/dashboard'>Volver al inicio</a>";
         });
 
         // Excepciones no capturadas
@@ -1916,7 +1842,7 @@ public class App {
             logger.error("Excepción no manejada en {}: {}", req.url(), e.getMessage(), e);
             res.status(500);
             res.type("text/html");
-            res.body("<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/'>Volver al inicio</a>");
+            res.body("<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/dashboard'>Volver al inicio</a>");
         });
 
         // Acceso no autorizado (ejemplo: intenta entrar a admin sin estar logueado)
@@ -1927,8 +1853,6 @@ public class App {
     // ASIGNAR MATERIAS A DOCENTES
     // VER MATERIAS DEL DOCENTE
     get("/admin/docentes/:id/materias", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         Map<String, Object> model = new HashMap<>();
         int codigoProfesor = Integer.parseInt(req.params(":id"));
 
@@ -1982,8 +1906,6 @@ public class App {
 
     // ASIGNAR MATERIA AL DOCENTE
     post("/admin/docentes/:id/materias/agregar", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         int codigoProfesor = Integer.parseInt(req.params(":id"));
         String codMateriaStr = req.queryParams("cod_materia");
         String fecha         = req.queryParams("fecha");
@@ -2024,8 +1946,6 @@ public class App {
 
     // QUITAR MATERIA DEL DOCENTE
     post("/admin/docentes/:id/materias/:asignacionId/delete", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         int codigoProfesor = Integer.parseInt(req.params(":id"));
         int asignacionId   = Integer.parseInt(req.params(":asignacionId"));
 
@@ -2044,8 +1964,6 @@ public class App {
     //! MATERIAS 
     // LISTAR
     get("/admin/materias", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         Map<String, Object> model = new HashMap<>();
         List<Materia> materiasDB = Materia.findAll();
         List<Map<String, Object>> materias = new ArrayList<>();
@@ -2071,8 +1989,6 @@ public class App {
 
     // FORMULARIO CREAR
     get("/admin/materias/agregar", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         Map<String, Object> model = new HashMap<>();
 
         List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
@@ -2093,8 +2009,6 @@ public class App {
 
     // AGREGAR
     post("/admin/materias/agregar", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         String nombre      = req.queryParams("nombre");
         String codigo      = req.queryParams("cod_materia");
         String descripcion = req.queryParams("descripcion");
@@ -2128,8 +2042,6 @@ public class App {
 
     // FORMULARIO EDITAR
     get("/admin/materias/:id/edit", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         Map<String, Object> model = new HashMap<>();
         int codMateria = Integer.parseInt(req.params(":id"));
 
@@ -2161,8 +2073,6 @@ public class App {
 
     // EDITAR
     post("/admin/materias/:id/edit", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         int codMateria = Integer.parseInt(req.params(":id"));
 
         Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
@@ -2198,8 +2108,6 @@ public class App {
 
     // CONFIRMAR ELIMINAR
     get("/admin/materias/:id/delete", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         Map<String, Object> model = new HashMap<>();
         int codMateria = Integer.parseInt(req.params(":id"));
 
@@ -2218,8 +2126,6 @@ public class App {
 
     // ELIMINAR
     post("/admin/materias/:id/delete", (req, res) -> {
-        if (!isAdmin(req)) { res.redirect("/dashboard"); return null; }
-
         int codMateria = Integer.parseInt(req.params(":id"));
 
         Materia materia = Materia.findFirst("cod_materia = ?", codMateria);

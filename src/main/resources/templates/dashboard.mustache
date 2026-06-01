@@ -31,6 +31,26 @@
             </span>!
         </p>
 
+        <!-- Mensaje de Error -->
+        {{#errorMessage}}
+        <div class="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-sm">
+            <div class="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-5 w-5 mr-2"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M12 8v4m0 4h.01M10.29 3.86l-7.82 13.5A2 2 0 004.18 20h15.64a2 2 0 001.71-2.64l-7.82-13.5a2 2 0 00-3.42 0z"/>
+                </svg>
+
+                <span>{{errorMessage}}</span>
+            </div>
+        </div>
+        {{/errorMessage}}
+        
         <!-- Tarjetas -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
 

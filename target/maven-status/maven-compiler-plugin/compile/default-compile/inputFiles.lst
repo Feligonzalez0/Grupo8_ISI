@@ -1,11 +1,11 @@
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PlanDeEstudios.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Carrera.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Materia.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/User.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/App.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PeriodoAcademico.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estudiante.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/config/DBConfigSingleton.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Persona.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Rol.java
-/home/agustinpc/proy/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Docente.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\App.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PlanDeEstudios.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Persona.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estudiante.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PeriodoAcademico.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\config\DBConfigSingleton.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\User.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Carrera.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Materia.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Rol.java
