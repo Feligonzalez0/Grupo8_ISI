@@ -19,15 +19,14 @@ import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
-import com.is1.proyecto.models.Rol;
-import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
+import com.is1.proyecto.models.User;
 
-import spark.ModelAndView;
-import spark.Request; // Clase Singleton para la configuración de la base de datos.
-import static spark.Spark.after;
+import spark.ModelAndView; // Interfaz Map, utilizada para Map.of() o HashMap.
+import spark.Request;
+import static spark.Spark.after; // Clase Singleton para la configuración de la base de datos.
 import static spark.Spark.before;
-import static spark.Spark.exception; // Modelo de ActiveJDBC que representa la tabla 'users'.
-import static spark.Spark.get;
+import static spark.Spark.exception;
+import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
 import static spark.Spark.halt;
 import static spark.Spark.internalServerError;
 import static spark.Spark.notFound;
@@ -1962,7 +1961,7 @@ public class App {
     });
 
     //! MATERIAS 
-    // LISTAR
+    // GENERAL
     get("/admin/materias", (req, res) -> {
         Map<String, Object> model = new HashMap<>();
         List<Materia> materiasDB = Materia.findAll();
@@ -2150,6 +2149,32 @@ public class App {
             return null;
         }
     });
+
+    // LISTAR
+    get("admin/materias/listado", (req, res) -> {
+        Map<String, Object> model = new HashMap<>();
+        List<Materia> materiasDB = Materia.findAll();
+        List<Map<String, Object>> materias = new ArrayList<>();
+
+        for(Materia materia : materiasDB){
+            Map<String, Object> materiaView = new HashMap<>();
+
+            materiaView.put("codMateria", materia.getCodMateria());
+            materiaView.put("nombre", materia.getNombre());
+            materiaView.put("descripcion", materia.getDescripcion());
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", materia.getCodPlan());
+            materiaView.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
+
+
+            materias.add(materiaView);
+        }
+
+        model.put("materias", materias);
+        return new ModelAndView(model, "admin/materias/listadoMaterias.mustache");
+    }, new MustacheTemplateEngine());
+
+
 
     } // Fin del método main
 
