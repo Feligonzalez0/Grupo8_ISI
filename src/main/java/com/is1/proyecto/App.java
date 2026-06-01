@@ -19,15 +19,14 @@ import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
-import com.is1.proyecto.models.Rol;
-import com.is1.proyecto.models.User; // Interfaz Map, utilizada para Map.of() o HashMap.
+import com.is1.proyecto.models.User;
 
-import spark.ModelAndView;
-import spark.Request; // Clase Singleton para la configuración de la base de datos.
-import static spark.Spark.after;
+import spark.ModelAndView; // Interfaz Map, utilizada para Map.of() o HashMap.
+import spark.Request;
+import static spark.Spark.after; // Clase Singleton para la configuración de la base de datos.
 import static spark.Spark.before;
-import static spark.Spark.exception; // Modelo de ActiveJDBC que representa la tabla 'users'.
-import static spark.Spark.get;
+import static spark.Spark.exception;
+import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
 import static spark.Spark.halt;
 import static spark.Spark.internalServerError;
 import static spark.Spark.notFound;
@@ -112,7 +111,7 @@ public class App {
                 halt();
             }
         });
-
+        
         try {
             Base.open(
                 dbConfig.getDriver(),
@@ -209,7 +208,7 @@ public class App {
                     rolClass = "bg-blue-100 text-blue-700";
                     break;
 
-                case "ALUMNO":
+                case "ESTUDIANTE":
                     rolClass = "bg-green-100 text-green-700";
                     break;
                 default: rolClass = "bg-gray-100 text-gray-700";
@@ -417,60 +416,6 @@ public class App {
                         .writeValueAsString(Map.of("error", "Error interno al registrar usuario: " + e.getMessage()));
             }
         });
-
-        get("/profile", (req, res) -> {
-            String currentUsername = req.session().attribute("currentUserUsername");
-            Boolean loggedIn = req.session().attribute("loggedIn");
-
-            if (currentUsername == null || loggedIn == null || !loggedIn) {
-                res.redirect("/?error=Debes iniciar sesion para acceder a esta pagina.");
-                return null;
-            }
-
-            User usuario = User.findFirst(
-                    "name = ?",
-                    currentUsername
-            );
-
-            if (usuario == null) {
-                req.session().invalidate();
-                res.redirect("/?error=Sesion invalida.");
-                return null;
-            }
-
-            Map<String, Object> model = new HashMap<>();
-
-            model.put("usuario", usuario);
-
-            String rol = usuario.getString("rol");
-
-            model.put("esAdmin", "ADMINISTRADOR".equals(rol));
-            model.put("esDocente", "DOCENTE".equals(rol));
-            model.put("esAlumno", "ALUMNO".equals(rol));
-
-            if ("DOCENTE".equals(rol)) {
-                Docente docente = Docente.findFirst("user_id = ?", usuario.getInteger("id"));
-
-                if (docente != null) {
-                    Persona persona = Persona.findFirst("dni = ?",docente.getInteger("dni"));
-                    model.put("docente", docente);
-                    model.put("persona", persona);
-                }
-            }
-
-            if ("ALUMNO".equals(rol)) {
-                Estudiante estudiante = Estudiante.findFirst("user_id = ?",usuario.getInteger("id"));
-
-                if (estudiante != null) {
-                    Persona persona = Persona.findFirst("dni = ?", estudiante.getInteger("dni"));
-                    model.put("estudiante", estudiante);
-                    model.put("persona", persona);
-                }
-            }
-
-            return new ModelAndView(model, "perfil.mustache");
-
-        }, new MustacheTemplateEngine());        
 
         post("/docente/new", (req, res) -> {
 
@@ -1430,7 +1375,7 @@ public class App {
 
 
         // CRUD plan de estudios
-        // LISTAR
+        // GENERAL
         get("/admin/planes", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
             List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
@@ -2016,7 +1961,7 @@ public class App {
     });
 
     //! MATERIAS 
-    // LISTAR
+    // GENERAL
     get("/admin/materias", (req, res) -> {
         Map<String, Object> model = new HashMap<>();
         List<Materia> materiasDB = Materia.findAll();
@@ -2204,6 +2149,32 @@ public class App {
             return null;
         }
     });
+
+    // LISTAR
+    get("admin/materias/listado", (req, res) -> {
+        Map<String, Object> model = new HashMap<>();
+        List<Materia> materiasDB = Materia.findAll();
+        List<Map<String, Object>> materias = new ArrayList<>();
+
+        for(Materia materia : materiasDB){
+            Map<String, Object> materiaView = new HashMap<>();
+
+            materiaView.put("codMateria", materia.getCodMateria());
+            materiaView.put("nombre", materia.getNombre());
+            materiaView.put("descripcion", materia.getDescripcion());
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", materia.getCodPlan());
+            materiaView.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
+
+
+            materias.add(materiaView);
+        }
+
+        model.put("materias", materias);
+        return new ModelAndView(model, "admin/materias/listadoMaterias.mustache");
+    }, new MustacheTemplateEngine());
+
+
 
     } // Fin del método main
 
