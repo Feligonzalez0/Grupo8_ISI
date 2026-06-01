@@ -12,11 +12,11 @@ public class Docente extends Persona {
         set("dni", dni);
     }
 
-    public Integer getCodigo() {
+    public Integer getCodigoProfesor() {
         return getInteger("codigo_profesor");
     }
 
-    public void setCodigo(Integer codigo) {
+    public void setCodigoProfesor(Integer codigo) {
         set("codigo_profesor", codigo);
     }
 

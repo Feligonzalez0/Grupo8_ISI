@@ -6,20 +6,20 @@ import org.javalite.activejdbc.annotations.Table;
 
 public class Estudiante extends Persona{
 
-  public Integer getDNI() {
+  public Integer getDni() {
         return getInteger("dni");
     }
 
-    public void setDNI(Integer dni) {
+    public void setDni(Integer dni) {
         set("dni", dni);
     }
 
     // CODIGO
-    public Integer getNroLeg() {
+    public Integer getNroLegajo() {
         return getInteger("nro_legajo");
     }
 
-    public void setNroLeg(Integer codigo) {
+    public void setNroLegajo(Integer codigo) {
         set("nro_legajo", codigo);
     }
 

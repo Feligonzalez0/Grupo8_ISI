@@ -112,7 +112,7 @@ public class App {
                 halt();
             }
         });
-        
+
         try {
             Base.open(
                 dbConfig.getDriver(),
@@ -209,7 +209,7 @@ public class App {
                     rolClass = "bg-blue-100 text-blue-700";
                     break;
 
-                case "ESTUDIANTE":
+                case "ALUMNO":
                     rolClass = "bg-green-100 text-green-700";
                     break;
                 default: rolClass = "bg-gray-100 text-gray-700";
@@ -418,6 +418,60 @@ public class App {
             }
         });
 
+        get("/profile", (req, res) -> {
+            String currentUsername = req.session().attribute("currentUserUsername");
+            Boolean loggedIn = req.session().attribute("loggedIn");
+
+            if (currentUsername == null || loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion para acceder a esta pagina.");
+                return null;
+            }
+
+            User usuario = User.findFirst(
+                    "name = ?",
+                    currentUsername
+            );
+
+            if (usuario == null) {
+                req.session().invalidate();
+                res.redirect("/?error=Sesion invalida.");
+                return null;
+            }
+
+            Map<String, Object> model = new HashMap<>();
+
+            model.put("usuario", usuario);
+
+            String rol = usuario.getString("rol");
+
+            model.put("esAdmin", "ADMINISTRADOR".equals(rol));
+            model.put("esDocente", "DOCENTE".equals(rol));
+            model.put("esAlumno", "ALUMNO".equals(rol));
+
+            if ("DOCENTE".equals(rol)) {
+                Docente docente = Docente.findFirst("user_id = ?", usuario.getInteger("id"));
+
+                if (docente != null) {
+                    Persona persona = Persona.findFirst("dni = ?",docente.getInteger("dni"));
+                    model.put("docente", docente);
+                    model.put("persona", persona);
+                }
+            }
+
+            if ("ALUMNO".equals(rol)) {
+                Estudiante estudiante = Estudiante.findFirst("user_id = ?",usuario.getInteger("id"));
+
+                if (estudiante != null) {
+                    Persona persona = Persona.findFirst("dni = ?", estudiante.getInteger("dni"));
+                    model.put("estudiante", estudiante);
+                    model.put("persona", persona);
+                }
+            }
+
+            return new ModelAndView(model, "perfil.mustache");
+
+        }, new MustacheTemplateEngine());        
+
         post("/docente/new", (req, res) -> {
 
             String nombre = req.queryParams("nombre");
@@ -512,7 +566,7 @@ public class App {
 
                 Persona persona = new Persona();
 
-                persona.setDNI(dni);
+                persona.setDni(dni);
                 persona.setNombre(nombre);
                 persona.setApellido(apellido);
 
@@ -1008,7 +1062,7 @@ public class App {
 
                 Persona persona = new Persona();
 
-                persona.setDNI(dni);
+                persona.setDni(dni);
                 persona.setNombre(nombre);
                 persona.setApellido(apellido);
 
@@ -1022,9 +1076,9 @@ public class App {
 
                 Estudiante estudiante = new Estudiante();
 
-                estudiante.setDNI(dni);
+                estudiante.setDni(dni);
                 estudiante.setEmail(email);
-                estudiante.setNroLeg(nro_legajo);
+                estudiante.setNroLegajo(nro_legajo);
 
                 // Asociar user
                 estudiante.set("user_id", usuarioExistente.getId());
