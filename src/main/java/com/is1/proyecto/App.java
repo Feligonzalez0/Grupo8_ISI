@@ -417,6 +417,61 @@ public class App {
             }
         });
 
+
+        get("/profile", (req, res) -> {
+            String currentUsername = req.session().attribute("currentUserUsername");
+            Boolean loggedIn = req.session().attribute("loggedIn");
+
+            if (currentUsername == null || loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion para acceder a esta pagina.");
+                return null;
+            }
+
+            User usuario = User.findFirst(
+                    "name = ?",
+                    currentUsername
+            );
+
+            if (usuario == null) {
+                req.session().invalidate();
+                res.redirect("/?error=Sesion invalida.");
+                return null;
+            }
+
+            Map<String, Object> model = new HashMap<>();
+
+            model.put("usuario", usuario);
+
+            String rol = usuario.getString("rol");
+
+            model.put("esAdmin", "ADMINISTRADOR".equals(rol));
+            model.put("esDocente", "DOCENTE".equals(rol));
+            model.put("esAlumno", "ALUMNO".equals(rol));
+
+            if ("DOCENTE".equals(rol)) {
+                Docente docente = Docente.findFirst("user_id = ?", usuario.getInteger("id"));
+
+                if (docente != null) {
+                    Persona persona = Persona.findFirst("dni = ?",docente.getInteger("dni"));
+                    model.put("docente", docente);
+                    model.put("persona", persona);
+                }
+            }
+
+            if ("ALUMNO".equals(rol)) {
+                Estudiante estudiante = Estudiante.findFirst("user_id = ?",usuario.getInteger("id"));
+
+                if (estudiante != null) {
+                    Persona persona = Persona.findFirst("dni = ?", estudiante.getInteger("dni"));
+                    model.put("estudiante", estudiante);
+                    model.put("persona", persona);
+                }
+            }
+
+            return new ModelAndView(model, "perfil.mustache");
+
+        }, new MustacheTemplateEngine()); 
+
         post("/docente/new", (req, res) -> {
 
             String nombre = req.queryParams("nombre");
