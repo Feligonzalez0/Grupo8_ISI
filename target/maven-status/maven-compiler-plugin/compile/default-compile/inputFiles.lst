@@ -1,11 +1,11 @@
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Carrera.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/config/DBConfigSingleton.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PlanDeEstudios.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PeriodoAcademico.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estudiante.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Docente.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/App.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Materia.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/User.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Rol.java
-/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Persona.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\App.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PlanDeEstudios.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Persona.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estudiante.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PeriodoAcademico.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\config\DBConfigSingleton.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\User.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Carrera.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Materia.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
+D:\Feli\Programación\Proyecto ISI\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Rol.java
