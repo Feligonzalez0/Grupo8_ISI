@@ -5,6 +5,7 @@ import org.javalite.activejdbc.annotations.Table;
 
 @Table("Materia")
 public class Materia extends Model {
+
     public Integer getCodMateria() {
         return getInteger("cod_materia");
     }

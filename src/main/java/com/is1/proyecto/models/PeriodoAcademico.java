@@ -1,11 +1,9 @@
 package com.is1.proyecto.models;
 
 import org.javalite.activejdbc.Model;
-import org.javalite.activejdbc.annotations.IdName;
 import org.javalite.activejdbc.annotations.Table;
 
 @Table("PeriodoAcademico")
-@IdName("id")
 public class PeriodoAcademico extends Model {
 
     public Integer getId() {

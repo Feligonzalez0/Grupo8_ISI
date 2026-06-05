@@ -3,10 +3,9 @@ package com.is1.proyecto.models;
 import org.javalite.activejdbc.annotations.Table;
 
 @Table("Estudiante")
-
 public class Estudiante extends Persona{
-
-  public Integer getDni() {
+    
+    public Integer getDni() {
         return getInteger("dni");
     }
 
@@ -14,7 +13,6 @@ public class Estudiante extends Persona{
         set("dni", dni);
     }
 
-    // CODIGO
     public Integer getNroLegajo() {
         return getInteger("nro_legajo");
     }
@@ -23,7 +21,6 @@ public class Estudiante extends Persona{
         set("nro_legajo", codigo);
     }
 
-    // EMAIL
     public String getEmail() {
         return getString("email");
     }

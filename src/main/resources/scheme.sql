@@ -6,8 +6,7 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
     password TEXT NOT NULL,
-    rol TEXT NOT NULL DEFAULT 'UNASSIGNED'
-        CHECK (rol IN ('ALUMNO', 'DOCENTE', 'ADMINISTRADOR', 'UNASSIGNED'))
+    rol TEXT NOT NULL DEFAULT 'UNASSIGNED' CHECK (rol IN ('ALUMNO', 'DOCENTE', 'ADMINISTRADOR', 'UNASSIGNED'))
 );
 
 -- Administrador (contraseña '123') 
@@ -53,6 +52,7 @@ CREATE TABLE IF NOT EXISTS PlanDeEstudios (
     años_total INTEGER NOT NULL,
     cantidad_materias_total INTEGER NOT NULL,
     cod_carrera INTEGER NOT NULL,
+
     FOREIGN KEY (cod_carrera) REFERENCES Carrera(cod_carrera)
 );
 
@@ -62,8 +62,7 @@ CREATE TABLE IF NOT EXISTS Materia (
     descripcion TEXT,
     cod_plan INTEGER NOT NULL,
 
-    FOREIGN KEY (cod_plan)
-        REFERENCES PlanDeEstudios(cod_plan)
+    FOREIGN KEY (cod_plan) REFERENCES PlanDeEstudios(cod_plan)
 );
 
 CREATE TABLE IF NOT EXISTS Carrera (
@@ -72,12 +71,23 @@ CREATE TABLE IF NOT EXISTS Carrera (
     descripcion TEXT
 );
 
+CREATE TABLE IF NOT EXISTS Estado (
+    dni_estudiante INTEGER NOT NULL,
+    cod_materia INTEGER NOT NULL,
+    estado TEXT NOT NULL CHECK (estado IN ('INSCRIPTO','REGULAR','APROBADO','LIBRE')),
+
+    PRIMARY KEY (dni_estudiante, cod_materia),
+
+    FOREIGN KEY (dni_estudiante) REFERENCES Estudiante(dni),
+    FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)
+);
+
 CREATE TABLE IF NOT EXISTS PeriodoAcademico (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     codigo_profesor INTEGER NOT NULL,
     cod_materia INTEGER NOT NULL,
     fecha TEXT NOT NULL,
-    cargo TEXT NOT NULL CHECK (cargo IN ('Responsable_de_Catedra', 'Jefe_de_Trabajos_Practicos', 'Ayudante')),
+    cargo TEXT NOT NULL CHECK (cargo IN ('RESPONSABLE_DE_CATEDRA', 'JEFE_DE_TRABAJOS_PRACTICOS', 'AYUDANTE')),
 
     FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor),
     FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)

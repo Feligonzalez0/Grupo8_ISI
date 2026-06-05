@@ -4,6 +4,7 @@ import org.javalite.activejdbc.annotations.Table;
 
 @Table("Docente")
 public class Docente extends Persona {
+
     public Integer getDNI() {
         return getInteger("dni");
     }

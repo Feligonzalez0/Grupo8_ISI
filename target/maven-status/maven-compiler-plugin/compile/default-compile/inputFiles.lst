@@ -1,11 +1,14 @@
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PlanDeEstudios.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Persona.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\User.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Rol.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Carrera.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Cargo.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PeriodoAcademico.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\TEstado.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\App.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estudiante.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Materia.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Carrera.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estado.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estudiante.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\config\DBConfigSingleton.java
