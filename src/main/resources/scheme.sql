@@ -1,7 +1,3 @@
--- Elimina la tabla 'users' si ya existe para asegurar un inicio limpio
--- DROP TABLE IF EXISTS users;
-
--- Crea la tabla 'users' con los campos originales, adaptados para SQLite
 CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     name TEXT NOT NULL UNIQUE,
@@ -61,11 +57,16 @@ CREATE TABLE IF NOT EXISTS Materia (
     nombre TEXT,
     descripcion TEXT,
     cod_plan INTEGER NOT NULL,
+    años_total INTEGER NOT NULL,
+    cantidad_materias_total INTEGER NOT NULL,
+    cod_carrera INTEGER NOT NULL,
+
+    FOREIGN KEY (cod_carrera) REFERENCES Carre
 
     FOREIGN KEY (cod_plan) REFERENCES PlanDeEstudios(cod_plan)
 );
 
-CREATE TABLE IF NOT EXISTS Carrera (
+CREATE TABLE IF NOT EXISTS Carrera (-- SPLIT
     cod_carrera INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT,
     descripcion TEXT
@@ -80,7 +81,7 @@ CREATE TABLE IF NOT EXISTS Correlatividad (
     FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia),
     FOREIGN KEY (cod_correlativa) REFERENCES Materia(cod_materia),
 
-    CHECK (cod_materia != cod_correlativa)
+    CHECK (cod_materia != cod_correlativa)-- SPLIT
 );
 
 CREATE TABLE IF NOT EXISTS Estado (
@@ -115,4 +116,11 @@ CREATE TABLE IF NOT EXISTS ExamenFinal(
     FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)
 );
 
-
+CREATE TABLE IF NOT EXISTS InscripcionExamen (
+    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    dni_estudiante INTEGER NOT NULL,
+    id_examen      INTEGER NOT NULL,
+    FOREIGN KEY (dni_estudiante) REFERENCES Estudiante(dni),
+    FOREIGN KEY (id_examen)      REFERENCES ExamenFinal(id),
+    UNIQUE (dni_estudiante, id_examen)
+);

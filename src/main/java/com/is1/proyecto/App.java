@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de d
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.models.Carrera;
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
+import com.is1.proyecto.models.Estado;
 import com.is1.proyecto.models.Estudiante;
 import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.PeriodoAcademico;
@@ -21,8 +22,9 @@ import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
 import com.is1.proyecto.models.User;
 import com.is1.proyecto.models.ExamenFinal;
+import com.is1.proyecto.models.InscripcionExamen;
 
-import spark.ModelAndView; // Interfaz Map, utilizada para Map.of() o HashMap.
+import spark.ModelAndView; // Interfaz Map, ufor (String statement : sql.split("-- SPLIT")) {tilizada para Map.of() o HashMap.
 import spark.Request;
 import static spark.Spark.after; // Clase Singleton para la configuración de la base de datos.
 import static spark.Spark.before;
@@ -55,9 +57,7 @@ public class App {
                 .getResourceAsStream("scheme.sql")
                 .readAllBytes()
         );
-
         Base.exec(sql);
-
         System.out.println("Schema ejecutado correctamente.");
 
     } catch (Exception e) {
@@ -2283,6 +2283,7 @@ public class App {
     }, new MustacheTemplateEngine());
       
     registrarRutasDocente();
+    registrarRutasEstudiante();
 
 
 
@@ -2290,8 +2291,8 @@ public class App {
 
     // HELPERS
     public static boolean esEmailValido(String email) {
-        String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
-        return email != null && email.matches(regex);
+    String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
+    return email != null && email.matches(regex);
     }
     
     private static boolean isAdmin(Request req) {
@@ -2303,7 +2304,7 @@ public class App {
         String rol = req.session().attribute("userRol");
         return "DOCENTE".equals(rol);
     }
-     private static void registrarRutasDocente() {
+private static void registrarRutasDocente() {
  
     before("/docente/*", (req, res) -> {
         Boolean loggedIn = req.session().attribute("loggedIn");
@@ -2325,6 +2326,7 @@ public class App {
  
         Integer userId = req.session().attribute("userId");
         Docente docente = Docente.findFirst("user_id = ?", userId);
+        System.out.println("codigoProfesor = " + docente.getCodigoProfesor());
  
         if (docente == null) {
             res.redirect("/dashboard?error=No se encontró el perfil de docente.");
@@ -2334,8 +2336,10 @@ public class App {
         // Solo materias donde el docente es Responsable_de_Catedra
         List<PeriodoAcademico> periodos = PeriodoAcademico.where(
             "codigo_profesor = ? AND cargo = ?",
-            docente.getCodigoProfesor(), "Responsable_de_Catedra"
+            docente.getCodigoProfesor(), "RESPONSABLE_DE_CATEDRA"
         );
+        System.out.println("periodos encontrados = " + periodos.size());
+
  
         List<Map<String, Object>> materiasView = new ArrayList<>();
         for (PeriodoAcademico p : periodos) {
@@ -2369,7 +2373,7 @@ public class App {
     if (docente == null) {
         res.redirect("/dashboard");
         return null;
-    }
+    }    
 
     String codMateriaStr = req.queryParams("cod_materia");
     String fecha         = req.queryParams("fecha");
@@ -2405,8 +2409,126 @@ public class App {
     return null;
 });
     }
-    
-    
 
 
+
+
+
+    private static void registrarRutasEstudiante() {
+
+    before("/estudiante/*", (req, res) -> {
+        Boolean loggedIn = req.session().attribute("loggedIn");
+        if (loggedIn == null || !loggedIn) {
+            res.redirect("/login");
+            halt();
+        }
+        String rol = req.session().attribute("userRol");
+        if (!"ALUMNO".equals(rol)) {
+            res.redirect("/dashboard");
+            halt();
+        }
+    });
+
+    // GET: ver exámenes disponibles para inscribirse
+    get("/estudiante/examenes", (req, res) -> {
+
+        Integer userId = req.session().attribute("userId");
+        Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+
+        if (estudiante == null) {
+            res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+            return null;
+        }
+
+        // Materias en estado REGULAR del estudiante
+        List<Estado> regulares = Estado.where(
+            "dni_estudiante = ? AND estado = ?",
+            estudiante.getDni(), "REGULAR"
+        );
+
+        List<Map<String, Object>> examenesView = new ArrayList<>();
+
+        for (Estado e : regulares) {
+            Integer codMateria = e.getCodMateria();
+
+            // Verificar si ya está inscripto a un examen de esta materia
+            boolean yaInscripto = InscripcionExamen.yaInscripto(estudiante.getDni(), codMateria);
+
+            // Exámenes disponibles para esa materia
+            List<ExamenFinal> examenes = ExamenFinal.where("cod_materia = ?", codMateria);
+
+            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+
+            for (ExamenFinal ex : examenes) {
+                Map<String, Object> ev = new HashMap<>();
+                ev.put("idExamen", ex.getId());
+                ev.put("nombreMateria", materia != null ? materia.getNombre() : "Sin nombre");
+                ev.put("fecha", ex.getFecha());
+                ev.put("yaInscripto", yaInscripto);
+                examenesView.add(ev);
+            }
+        }
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("examenes", examenesView);
+        model.put("sinExamenes", examenesView.isEmpty());
+
+        String success = req.queryParams("successMessage");
+        String error   = req.queryParams("errorMessage");
+        if (success != null) model.put("successMessage", success);
+        if (error   != null) model.put("errorMessage", error);
+
+        return new ModelAndView(model, "estudiante/examenesDisponibles.mustache");
+
+    }, new MustacheTemplateEngine());
+
+    // POST: inscribirse a un examen
+    post("/estudiante/examenes/:id/inscribir", (req, res) -> {
+
+        Integer userId = req.session().attribute("userId");
+        Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+
+        if (estudiante == null) {
+            res.redirect("/dashboard");
+            return null;
+        }
+
+        Integer idExamen = Integer.parseInt(req.params(":id"));
+        ExamenFinal examen = ExamenFinal.findById(idExamen);
+
+        if (examen == null) {
+            res.redirect("/estudiante/examenes?errorMessage=Examen no encontrado.");
+            return null;
+        }
+
+        // Verificar que tiene esa materia en REGULAR
+        Estado estado = Estado.findFirst(
+            "dni_estudiante = ? AND cod_materia = ? AND estado = ?",
+            estudiante.getDni(), examen.getCodMateria(), "REGULAR"
+        );
+        if (estado == null) {
+            res.redirect("/estudiante/examenes?errorMessage=No tenes esa materia en estado Regular.");
+            return null;
+        }
+
+        // Verificar que no está ya inscripto a otro examen de esa materia
+        if (InscripcionExamen.yaInscripto(estudiante.getDni(), examen.getCodMateria())) {
+            res.redirect("/estudiante/examenes?errorMessage=Ya estas inscripto a un examen de esa materia.");
+            return null;
+        }
+
+        try {
+            InscripcionExamen inscripcion = new InscripcionExamen();
+            inscripcion.setDniEstudiante(estudiante.getDni());
+            inscripcion.setIdExamen(idExamen);
+            inscripcion.saveIt();
+
+            res.redirect("/estudiante/examenes?successMessage=Inscripcion realizada correctamente.");
+        } catch (Exception e) {
+            res.redirect("/estudiante/examenes?errorMessage=Error al inscribirse: " + e.getMessage());
+        }
+        return null;
+    });
+}
+    
 } // Fin de la clase App
