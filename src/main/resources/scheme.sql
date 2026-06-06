@@ -119,3 +119,23 @@ CREATE TABLE IF NOT EXISTS InscripcionExamen (
     FOREIGN KEY (id_examen)      REFERENCES ExamenFinal(id),
     UNIQUE (dni_estudiante, id_examen)
 );
+
+INSERT INTO users (name, password, rol) VALUES ('docente1', '$2a$12$AoKGRGy5pfvc9LVM2rhN6uJabTr/R9SV8rF9CsuePFuoskRa.9k9K', 'DOCENTE');
+INSERT INTO users (name, password, rol) VALUES ('alumno1', '$2a$12$AoKGRGy5pfvc9LVM2rhN6uJabTr/R9SV8rF9CsuePFuoskRa.9k9K', 'ALUMNO');
+
+
+INSERT INTO Persona (dni, nombre, apellido, fecha_nacimiento, telefono, direccion) VALUES (11111111, 'Carlos', 'Lopez', '1985-03-10', '3511111111', 'Av. Siempre Viva 1');
+INSERT INTO Persona (dni, nombre, apellido, fecha_nacimiento, telefono, direccion) VALUES (22222222, 'Maria', 'Gomez', '2001-06-15', '3522222222', 'Calle Falsa 456');
+
+INSERT INTO Docente (dni, email, user_id) VALUES (11111111, 'carlos@test.com', 2);
+INSERT INTO Estudiante (dni, nro_legajo, email, user_id) VALUES (22222222, 1001, 'maria@test.com', 3);
+
+
+INSERT INTO Carrera (nombre, descripcion) VALUES ('Ingenieria en Sistemas', 'Carrera de sistemas');
+INSERT INTO PlanDeEstudios (año, vigencia, años_total, cantidad_materias_total, cod_carrera) VALUES (2020, 5, 5, 30, 1);
+INSERT INTO Materia (cod_materia, nombre, descripcion, cod_plan) VALUES (101, 'Algoritmos', 'Materia de algoritmos', 1);
+
+INSERT INTO PeriodoAcademico (codigo_profesor, cod_materia, fecha, cargo) VALUES (1, 101, '2024-01-01', 'RESPONSABLE_DE_CATEDRA');
+
+
+INSERT INTO Estado (dni_estudiante, cod_materia, estado) VALUES (22222222, 101, 'REGULAR');

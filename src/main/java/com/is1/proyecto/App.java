@@ -24,7 +24,7 @@ import com.is1.proyecto.models.User;
 import com.is1.proyecto.models.ExamenFinal;
 import com.is1.proyecto.models.InscripcionExamen;
 
-import spark.ModelAndView; // Interfaz Map, ufor (String statement : sql.split("-- SPLIT")) {tilizada para Map.of() o HashMap.
+import spark.ModelAndView; 
 import spark.Request;
 import static spark.Spark.after; // Clase Singleton para la configuración de la base de datos.
 import static spark.Spark.before;
@@ -2282,12 +2282,20 @@ public class App {
         return new ModelAndView(model, "admin/materias/listadoMaterias.mustache");
     }, new MustacheTemplateEngine());
       
-    registrarRutasDocente();
-    registrarRutasEstudiante();
-
-
+     registrarRutasDocente();
+   
+     registrarRutasEstudiante();
+     
+     
 
     } // Fin del método main
+
+
+
+
+
+
+
 
     // HELPERS
     public static boolean esEmailValido(String email) {
@@ -2304,6 +2312,19 @@ public class App {
         String rol = req.session().attribute("userRol");
         return "DOCENTE".equals(rol);
     }
+
+     
+
+
+
+
+
+
+
+
+
+
+
 private static void registrarRutasDocente() {
  
     before("/docente/*", (req, res) -> {
@@ -2316,7 +2337,7 @@ private static void registrarRutasDocente() {
  
         String rol = req.session().attribute("userRol");
  
-        if (!"DOCENTE".equals(rol)) {
+        if (!"DOCENTE".equals(rol) && !"ADMINISTRADOR".equals(rol))  {
             res.redirect("/dashboard");
             halt();
         }
@@ -2423,7 +2444,7 @@ private static void registrarRutasDocente() {
             halt();
         }
         String rol = req.session().attribute("userRol");
-        if (!"ALUMNO".equals(rol)) {
+       if (!"ALUMNO".equals(rol) && !"ADMINISTRADOR".equals(rol)) {
             res.redirect("/dashboard");
             halt();
         }
