@@ -713,6 +713,36 @@ public class App {
 
         }, new MustacheTemplateEngine());
 
+
+                // ===== DASHBOARD ESTUDIANTE =====
+        get("/estudiante/dashboard", (req, res) -> {
+            Integer userId = req.session().attribute("userId");
+            String userRol = req.session().attribute("userRol");
+ 
+            if (userId == null || !"ALUMNO".equals(userRol)) {
+                res.redirect("/dashboard?error=Acceso no autorizado.");
+                return null;
+            }
+ 
+            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+            if (estudiante == null) {
+                res.redirect("/dashboard?error=No se encontro el perfil de estudiante.");
+                return null;
+            }
+ 
+            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
+ 
+            Map<String, Object> model = new HashMap<>();
+            model.put("nombre",    persona != null ? persona.getNombre()   : "");
+            model.put("apellido",  persona != null ? persona.getApellido() : "");
+            model.put("nroLegajo", estudiante.getNroLegajo());
+ 
+            String error = req.queryParams("error");
+            if (error != null) model.put("errorMessage", error);
+ 
+            return new ModelAndView(model, "estudiante/estudianteDashboard.mustache");
+        }, new MustacheTemplateEngine());
+
         get("/admin/docentes/:id/edit", (req, res) -> {
 
             Map<String, Object> model = new HashMap<>();
@@ -1411,7 +1441,7 @@ public class App {
 
             model.put("materias", Materia.findAll());
 
-            return new ModelAndView(model, "admin/estudiantes/inscribirMateria.mustache");
+            return new ModelAndView(model, "estudiante/inscripciones/inscripcion.mustache");
 
         }, new MustacheTemplateEngine());
 

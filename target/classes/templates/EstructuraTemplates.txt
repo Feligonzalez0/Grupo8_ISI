@@ -7,12 +7,19 @@ src/main/resources/templates/
 │   │
 │   ├── partials/
 │   │   ├── crudCard.mustache
-│   │   └── crudActions.mustache
+│   │
 │   ├── materias/
 │   │   └── materiasDashboard.mustache
+│   │   └── agregarMateria.mustache
+│   │   └── editarMateria.mustache
+│   │   └── eliminarMateria.mustache
+│   │   └── eliminarMateria.mustache
 │   │
 │   ├── carreras/
 │   │   └── carrerasDashboard.mustache
+│   │   └── agregarCarrera.mustache
+│   │   └── editarCarrera.mustache
+│   │   └── eliminarCarrera.mustache
 │   │
 │   ├── docentes/
 │   │   ├── docentesDashboard.mustache
@@ -20,9 +27,14 @@ src/main/resources/templates/
 │   │   ├── editarDocente.mustache
 │   │   ├── eliminarDocente.mustache
 │   │   └── listadoDocentes.mustache
+|   |   └── materiasDocente.mustache    (NUEVO)
 │   │
 │   ├── planes/
 │   │   └── planesDashboard.mustache
+│   │   └── agregarPlan.mustache
+│   │   └── editarPlan.mustache
+│   │   └── eliminarPlan.mustache
+│   │   └── materiasPlan.mustache
 │   │
 │   └── estudiantes/
 │       ├── estudiantesDashboard.mustache
@@ -30,5 +42,12 @@ src/main/resources/templates/
 │       ├── editarEstudiante.mustache
 │       ├── eliminarEstudiante.mustache
 │       └── listadoEstudiantes.mustache
-│       └── inscribirMateria.mustache          (NUEVO)
-│       └── materiasDisponibles.mustache       (NUEVO)
+│       └── inscribirMateria.mustache   (NUEVO)
+│
+├── docente/
+|   ├── crearExamen.mustache    (NUEVO)
+|
+├── estudiante/
+|   └── inscripciones/
+|       └── inscripcion.mustache
+|   ├── estudianteDashboard.mustache    (NUEVO)

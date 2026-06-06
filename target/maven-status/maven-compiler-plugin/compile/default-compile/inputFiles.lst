@@ -1,18 +1,18 @@
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/InscripcionExamen.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Carrera.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/ExamenFinal.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/config/DBConfigSingleton.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Persona.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/App.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PlanDeEstudios.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Admin.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Materia.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Correlatividad.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estado.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Docente.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Rol.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PeriodoAcademico.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/TEstado.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Cargo.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estudiante.java
-/home/benjamin/Documentos/UNIVERSIDAD/Tercer año/Ingenieria en Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/User.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PlanDeEstudios.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Persona.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\User.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\InscripcionExamen.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Rol.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Cargo.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Correlatividad.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PeriodoAcademico.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\TEstado.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\App.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Materia.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Carrera.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Admin.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estado.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estudiante.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\ExamenFinal.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\config\DBConfigSingleton.java
