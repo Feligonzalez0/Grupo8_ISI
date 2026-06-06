@@ -21,10 +21,6 @@ public class Docente extends Persona {
         set("codigo_profesor", codigo);
     }
 
-    public String getEmail() {
-        return getString("email");
-    }
-
     public void setEmail(String email) {
         set("email", email);
     }

@@ -92,3 +92,14 @@ CREATE TABLE IF NOT EXISTS PeriodoAcademico (
     FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor),
     FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)
 );
+
+CREATE TABLE IF NOT EXISTS ExamenFinal(
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    codigo_profesor INTEGER NOT NULL,
+    cod_materia INTEGER NOT NULL,
+    fecha TEXT NOT NULL,
+    FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor),
+    FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)
+
+   
+);
