@@ -114,3 +114,5 @@ CREATE TABLE IF NOT EXISTS ExamenFinal(
     FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor),
     FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia)
 );
+
+
