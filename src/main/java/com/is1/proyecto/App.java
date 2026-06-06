@@ -13,6 +13,7 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.models.Carrera;
+import com.is1.proyecto.models.Correlatividad;
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
 import com.is1.proyecto.models.Estado;
 import com.is1.proyecto.models.Estudiante;
@@ -1138,6 +1139,179 @@ public class App {
             }
         });
 
+        get("/estudiante/inscripcion", (req, res) -> {
+            Integer userId = req.session().attribute("userId");
+            String userRol = req.session().attribute("userRol");
+
+            if(userId == null || !"ALUMNO".equals(userRol)) {
+                res.redirect("/dashboard?error=Acceso no autorizado.");
+                return null;
+            }
+
+            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+            if(estudiante == null) {
+                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+                return null;
+            }
+
+            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
+
+            List<Estado> estadosActuales = Estado.where("dni_estudiante = ?", estudiante.getDni());
+            List<Integer> codMateriasInscriptas = new ArrayList<>();
+            for(Estado e : estadosActuales) {
+                codMateriasInscriptas.add(e.getCodMateria());
+            }
+
+            List<Integer> codMateriasAprobadas = new ArrayList<>();
+            for(Estado e : estadosActuales) {
+                if("APROBADO".equals(e.getString("estado"))) {
+                    codMateriasAprobadas.add(e.getCodMateria());
+                }
+            }
+
+            List<PeriodoAcademico> periodos = PeriodoAcademico.findAll();
+            List<Integer> codMateriasConPeriodo = new ArrayList<>();
+            for(PeriodoAcademico p : periodos) {
+                if(!codMateriasConPeriodo.contains(p.getCodMateria())) {
+                    codMateriasConPeriodo.add(p.getCodMateria());
+                }
+            }
+
+            List<Map<String, Object>> materiasDisponibles = new ArrayList<>();
+            List<Map<String, Object>> materiasInscriptas  = new ArrayList<>();
+
+            for(Integer codMat : codMateriasConPeriodo) {
+                Materia m = Materia.findFirst("cod_materia = ?", codMat);
+
+                if(m == null) continue;
+
+                if(codMateriasInscriptas.contains(codMat)) {
+                    Map<String, Object> mv = new HashMap<>();
+                    mv.put("codMateria", codMat);
+                    mv.put("nombre",     m.getNombre());
+
+                    Estado est = Estado.findFirst("dni_estudiante = ? AND cod_materia = ?", estudiante.getDni(), codMat);
+                    mv.put("estado", est != null ? est.getString("estado") : "");
+                    materiasInscriptas.add(mv);
+
+                    continue;
+                }
+
+                List<Correlatividad> correlativas = Correlatividad.where("cod_materia = ?", codMat);
+                boolean cumpleCorrelativas = true;
+                List<String> faltantes = new ArrayList<>();
+    
+                for(Correlatividad c : correlativas) {
+                    if(!codMateriasAprobadas.contains(c.getCodCorrelativa())) {
+                        cumpleCorrelativas = false;
+                        Materia mc = Materia.findFirst("cod_materia = ?", c.getCodCorrelativa());
+                        faltantes.add(mc != null ? mc.getNombre() : "Cód. " + c.getCodCorrelativa());
+                    }
+                }
+
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("codMateria", codMat);
+                mv.put("nombre", m.getNombre());
+                mv.put("descripcion", m.getDescripcion());
+                mv.put("puedeInscribirse", cumpleCorrelativas);
+                mv.put("tieneCorrelativas", !correlativas.isEmpty());
+                mv.put("correlativasFaltantes", String.join(", ", faltantes));
+                materiasDisponibles.add(mv);
+            }
+    
+            Map<String, Object> model = new HashMap<>();
+            model.put("dni",             estudiante.getDni());
+            model.put("nroLegajo",       estudiante.getNroLegajo());
+            model.put("nombre",          persona != null ? persona.getNombre() : "");
+            model.put("apellido",        persona != null ? persona.getApellido() : "");
+            model.put("materias",        materiasDisponibles);
+            model.put("sinMaterias",     materiasDisponibles.isEmpty());
+            model.put("inscriptas",      materiasInscriptas);
+            model.put("tieneInscriptas", !materiasInscriptas.isEmpty());
+            model.put("successMessage",  req.queryParams("successMessage"));
+            model.put("errorMessage",    req.queryParams("errorMessage"));
+    
+            return new ModelAndView(model, "estudiante/inscripcion.mustache");
+
+        }, new MustacheTemplateEngine());
+    
+        post("/estudiante/inscripcion", (req, res) -> {
+            Integer userId = req.session().attribute("userId");
+            String userRol = req.session().attribute("userRol");
+    
+            if(userId == null || !"ALUMNO".equals(userRol)) {
+                res.redirect("/dashboard?error=Acceso no autorizado.");
+                return null;
+            }
+    
+            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+            if(estudiante == null) {
+                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+                return null;
+            }
+    
+            String codMateriaStr = req.queryParams("cod_materia");
+            if(codMateriaStr == null || codMateriaStr.isEmpty()) {
+                res.redirect("/estudiante/inscripcion?errorMessage=Debe seleccionar una materia.");
+                return null;
+            }
+    
+            int codMateria = Integer.parseInt(codMateriaStr);
+    
+            PeriodoAcademico periodo = PeriodoAcademico.findFirst("cod_materia = ?", codMateria);
+            if(periodo == null) {
+                res.redirect("/estudiante/inscripcion?errorMessage=La materia no tiene un período académico activo.");
+
+                return null;
+            }
+
+            Estado yaInscripto = Estado.findFirst("dni_estudiante = ? AND cod_materia = ?", estudiante.getDni(), codMateria);
+            if (yaInscripto != null) {
+                res.redirect("/estudiante/inscripcion?errorMessage=Ya estás inscripto en esa materia.");
+
+                return null;
+            }
+
+            List<Correlatividad> correlativas = Correlatividad.where("cod_materia = ?", codMateria);
+            if(!correlativas.isEmpty()) {
+                List<Estado> aprobadas = Estado.where("dni_estudiante = ? AND estado = 'APROBADO'", estudiante.getDni());
+                List<Integer> codAprobadas = new ArrayList<>();
+                for(Estado e : aprobadas) codAprobadas.add(e.getCodMateria());
+    
+                List<String> faltantes = new ArrayList<>();
+                for(Correlatividad c : correlativas) {
+                    if(!codAprobadas.contains(c.getCodCorrelativa())) {
+                        Materia mc = Materia.findFirst("cod_materia = ?", c.getCodCorrelativa());
+                        faltantes.add(mc != null ? mc.getNombre() : "Cód. " + c.getCodCorrelativa());
+                    }
+                }
+
+                if(!faltantes.isEmpty()) {
+                    String msg = "No cumplís las correlatividades. Te falta aprobar: " + String.join(", ", faltantes);
+
+                    try {
+                        res.redirect("/estudiante/inscripcion?errorMessage=" + java.net.URLEncoder.encode(msg, "UTF-8"));
+                    } catch (Exception ex) {
+                        res.redirect("/estudiante/inscripcion?errorMessage=Correlativas incompletas.");
+                    }
+                    return null;
+                }
+            }
+    
+            try {
+                estudiante.inscribirseMateria(codMateria);
+                res.redirect("/estudiante/inscripcion?successMessage=Te inscribiste correctamente a la materia.");
+            } catch (Exception e) {
+                try {
+                    res.redirect("/estudiante/inscripcion?errorMessage=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                } catch (Exception ex) {
+                    res.redirect("/estudiante/inscripcion?errorMessage=Error al inscribirse.");
+                }
+            }
+
+            return null;
+        });
+        
         // Con esto podemos hacer localhost:puerto/admin/docentes/agregar
         get("/admin/estudiantes/agregar", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
@@ -1441,7 +1615,7 @@ public class App {
 
             model.put("materias", Materia.findAll());
 
-            return new ModelAndView(model, "estudiante/inscripciones/inscripcion.mustache");
+            return new ModelAndView(model, "admin/estudiantes/inscribirMateria.mustache");
 
         }, new MustacheTemplateEngine());
 
@@ -2289,7 +2463,7 @@ public class App {
     });
 
     // LISTAR
-    get("admin/materias/listado", (req, res) -> {
+    get("/admin/materias/listado", (req, res) -> {
         Map<String, Object> model = new HashMap<>();
         List<Materia> materiasDB = Materia.findAll();
         List<Map<String, Object>> materias = new ArrayList<>();
@@ -2309,7 +2483,7 @@ public class App {
         }
 
         model.put("materias", materias);
-        return new ModelAndView(model, "admin/materias/listadoMaterias.mustache");
+        return new ModelAndView(model, "/admin/materias/listadoMaterias.mustache");
     }, new MustacheTemplateEngine());
       
      registrarRutasDocente();

@@ -36,7 +36,47 @@
 
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
 
-            {{> partials/crudCard }}
+            <!-- Inscripción a Materias -->
+            <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+                <h2 class="text-2xl font-bold text-blue-700 mb-3">
+                    Inscripción a Materias
+                </h2>
+                <p class="text-gray-600 mb-5">
+                    Consultá las materias disponibles e inscribite en las que cumplís las correlatividades.
+                </p>
+                <a href="/estudiante/inscripcion"
+                   class="inline-block bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition">
+                    Ver materias
+                </a>
+            </div>
+
+            <!-- Exámenes Finales -->
+            <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+                <h2 class="text-2xl font-bold text-green-700 mb-3">
+                    Exámenes Finales
+                </h2>
+                <p class="text-gray-600 mb-5">
+                    Consultá los exámenes finales disponibles e inscribite para rendir.
+                </p>
+                <a href="/estudiante/examenes"
+                   class="inline-block bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition">
+                    Ver exámenes
+                </a>
+            </div>
+
+            <!-- Mi Perfil -->
+            <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+                <h2 class="text-2xl font-bold text-purple-700 mb-3">
+                    Mi Perfil
+                </h2>
+                <p class="text-gray-600 mb-5">
+                    Consultá tus datos personales y académicos.
+                </p>
+                <a href="/profile"
+                   class="inline-block bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition">
+                    Ver perfil
+                </a>
+            </div>
 
         </div>
 

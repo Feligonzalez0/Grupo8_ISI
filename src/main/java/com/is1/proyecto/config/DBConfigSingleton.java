@@ -56,4 +56,3 @@ public final class DBConfigSingleton {
         return driver;
     }
 }
-

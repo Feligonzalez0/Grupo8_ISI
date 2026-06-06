@@ -112,11 +112,12 @@ CREATE TABLE IF NOT EXISTS ExamenFinal(
 );
 
 CREATE TABLE IF NOT EXISTS InscripcionExamen (
-    id             INTEGER PRIMARY KEY AUTOINCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     dni_estudiante INTEGER NOT NULL,
-    id_examen      INTEGER NOT NULL,
-    FOREIGN KEY (dni_estudiante) REFERENCES Estudiante(dni),
-    FOREIGN KEY (id_examen)      REFERENCES ExamenFinal(id),
-    UNIQUE (dni_estudiante, id_examen)
-);
+    id_examen INTEGER NOT NULL,
 
+    PRIMARY KEY (dni_estudiante, id_examen),
+
+    FOREIGN KEY (dni_estudiante) REFERENCES Estudiante(dni),
+    FOREIGN KEY (id_examen)      REFERENCES ExamenFinal(id)
+);

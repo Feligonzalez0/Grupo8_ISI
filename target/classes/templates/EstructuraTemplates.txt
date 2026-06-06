@@ -1,6 +1,6 @@
 src/main/resources/templates/
 ├── ...
-├── dashboard.mustache
+├── dashboard.mustache  (MODIFICACION)
 │
 ├── admin/
 │   ├── adminDashboard.mustache
@@ -48,6 +48,6 @@ src/main/resources/templates/
 |   ├── crearExamen.mustache    (NUEVO)
 |
 ├── estudiante/
-|   └── inscripciones/
-|       └── inscripcion.mustache
+|   ├── inscripcion.mustache    (NUEVO)
 |   ├── estudianteDashboard.mustache    (NUEVO)
+|   ├── estudianteDashboard     (NUEVO)
