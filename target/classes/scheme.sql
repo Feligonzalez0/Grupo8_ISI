@@ -71,6 +71,18 @@ CREATE TABLE IF NOT EXISTS Carrera (
     descripcion TEXT
 );
 
+CREATE TABLE IF NOT EXISTS Correlatividad (
+    cod_materia INTEGER NOT NULL,
+    cod_correlativa INTEGER NOT NULL,
+
+    PRIMARY KEY (cod_materia, cod_correlativa),
+
+    FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia),
+    FOREIGN KEY (cod_correlativa) REFERENCES Materia(cod_materia),
+
+    CHECK (cod_materia != cod_correlativa)
+);
+
 CREATE TABLE IF NOT EXISTS Estado (
     dni_estudiante INTEGER NOT NULL,
     cod_materia INTEGER NOT NULL,
