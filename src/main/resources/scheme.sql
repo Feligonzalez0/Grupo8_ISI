@@ -57,16 +57,11 @@ CREATE TABLE IF NOT EXISTS Materia (
     nombre TEXT,
     descripcion TEXT,
     cod_plan INTEGER NOT NULL,
-    años_total INTEGER NOT NULL,
-    cantidad_materias_total INTEGER NOT NULL,
-    cod_carrera INTEGER NOT NULL,
-
-    FOREIGN KEY (cod_carrera) REFERENCES Carre
 
     FOREIGN KEY (cod_plan) REFERENCES PlanDeEstudios(cod_plan)
 );
 
-CREATE TABLE IF NOT EXISTS Carrera (-- SPLIT
+CREATE TABLE IF NOT EXISTS Carrera (
     cod_carrera INTEGER PRIMARY KEY AUTOINCREMENT,
     nombre TEXT,
     descripcion TEXT
