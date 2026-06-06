@@ -1386,6 +1386,58 @@ public class App {
 
         });
 
+        get("/admin/estudiantes/:dni/materias", (req, res) -> {
+            Integer dni = Integer.parseInt(req.params(":dni"));
+
+            Estudiante estudiante = Estudiante.findFirst("dni = ?", dni);
+
+            if(estudiante == null) {
+                res.redirect("/admin/estudiantes?errorMessage=Estudiante no encontrado");
+                return null;
+            }
+
+            Persona persona = Persona.findFirst("dni = ?", dni);
+
+            Map<String, Object> model = new HashMap<>();
+
+            model.put("dni", estudiante.getDni());
+            model.put("nro_legajo", estudiante.getNroLegajo());
+
+            if (persona != null) {
+                model.put("nombre", persona.getNombre());
+                model.put("apellido", persona.getApellido());
+            }
+
+            model.put("materias", Materia.findAll());
+
+            return new ModelAndView(model, "admin/estudiantes/inscribirMateria.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        post("/admin/estudiantes/:dni/inscribir", (req, res) -> {
+            Integer dni = Integer.parseInt(req.params(":dni"));
+            Integer codMateria = Integer.parseInt(req.queryParams("cod_materia"));
+
+            Estudiante estudiante =Estudiante.findFirst("dni = ?", dni);
+            if (estudiante == null) {
+                res.redirect("/admin/estudiantes?errorMessage=Estudiante no encontrado.");
+
+                return null;
+            }
+
+            try {
+                estudiante.inscribirseMateria(codMateria);
+
+                res.redirect("/admin/estudiantes?successMessage=Materia asignada correctamente.");
+
+            } catch (Exception e) {
+
+                res.redirect("/admin/estudiantes?errorMessage=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+            }
+
+            return null;
+        });
+
         get("/admin/estudiantes/listado", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
             List<Estudiante> estudiantesDB = Estudiante.findAll();

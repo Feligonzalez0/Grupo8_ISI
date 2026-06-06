@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Inscripción a Materias</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen p-6">
+
+<div class="max-w-5xl mx-auto">
+
+    <!-- HEADER -->
+    <div class="flex justify-between items-center mb-8">
+
+        <div>
+            <h1 class="text-4xl font-bold text-red-700">
+                Inscripción a Materias
+            </h1>
+
+            <p class="text-gray-600 mt-2">
+                Seleccione una materia para inscribir al estudiante.
+            </p>
+        </div>
+
+        <a href="/admin/estudiantes"
+           class="bg-gray-700 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition">
+            Volver
+        </a>
+
+    </div>
+
+    <!-- MENSAJES -->
+    {{#successMessage}}
+    <div class="bg-green-100 border border-green-300 text-green-800 p-4 rounded mb-6">
+        {{successMessage}}
+    </div>
+    {{/successMessage}}
+
+    {{#errorMessage}}
+    <div class="bg-red-100 border border-red-300 text-red-800 p-4 rounded mb-6">
+        {{errorMessage}}
+    </div>
+    {{/errorMessage}}
+
+    <!-- DATOS DEL ESTUDIANTE -->
+    <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6 mb-8">
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-4">
+            Datos del Estudiante
+        </h2>
+
+        <div class="grid grid-cols-2 gap-4">
+
+            <div>
+                <span class="font-semibold">DNI:</span>
+                {{dni}}
+            </div>
+
+            <div>
+                <span class="font-semibold">Legajo:</span>
+                {{nro_legajo}}
+            </div>
+
+            <div>
+                <span class="font-semibold">Nombre:</span>
+                {{nombre}}
+            </div>
+
+            <div>
+                <span class="font-semibold">Apellido:</span>
+                {{apellido}}
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- LISTADO DE MATERIAS -->
+    <div class="bg-white rounded-2xl shadow-md border border-gray-200 p-6">
+
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">
+            Materias Disponibles
+        </h2>
+
+        <div class="overflow-x-auto">
+
+            <table class="min-w-full border border-gray-200">
+
+                <thead class="bg-gray-100">
+                    <tr>
+                        <th class="p-3 border">Código</th>
+                        <th class="p-3 border">Materia</th>
+                        <th class="p-3 border">Descripción</th>
+                        <th class="p-3 border">Acción</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+
+                    {{#materias}}
+                    <tr class="hover:bg-gray-50">
+
+                        <td class="p-3 border text-center">
+                            {{cod_materia}}
+                        </td>
+
+                        <td class="p-3 border text-center">
+                            {{nombre}}
+                        </td>
+
+                        <td class="p-3 border">
+                            {{descripcion}}
+                        </td>
+
+                        <td class="p-3 border text-center">
+
+                            <form method="post"
+                                  action="/admin/estudiantes/{{dni}}/inscribir">
+
+                                <input type="hidden"
+                                       name="cod_materia"
+                                       value="{{codMateria}}">
+
+                                <button type="submit"
+                                        class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition">
+                                    Inscribir
+                                </button>
+
+                            </form>
+
+                        </td>
+
+                    </tr>
+                    {{/materias}}
+
+                </tbody>
+
+            </table>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

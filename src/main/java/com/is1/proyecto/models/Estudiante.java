@@ -28,4 +28,20 @@ public class Estudiante extends Persona{
     public void setEmail(String email) {
         set("email", email);
     }
+
+    public void inscribirseMateria(Integer codMateria) {
+        Estado existente = Estado.findFirst( "dni_estudiante = ? AND cod_materia = ?", this.getDni(), codMateria);
+
+        if(existente != null) {
+            throw new RuntimeException("Ya está inscripto en la materia");
+        }
+
+        Estado estado = new Estado();
+
+        estado.setDniEstudiante(getDni());
+        estado.setCodMateria(codMateria);
+        estado.setEstado(TEstado.INSCRIPTO);
+
+        estado.saveIt();
+    }
 }

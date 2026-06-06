@@ -3,9 +3,9 @@ package com.is1.proyecto.models;
 import org.javalite.activejdbc.Model;
 import org.javalite.activejdbc.annotations.Table;
 
-
 @Table("ExamenFinal")
-public class ExamenFinal extends Model{
+public class ExamenFinal extends Model {
+
     public Integer getId() {
         return getInteger("id");
     }
@@ -33,8 +33,4 @@ public class ExamenFinal extends Model{
     public void setFecha(String fecha) {
         set("fecha", fecha);
     }
-
-
- 
 }
-
