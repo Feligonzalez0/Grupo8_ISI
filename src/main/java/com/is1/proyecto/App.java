@@ -17,13 +17,13 @@ import com.is1.proyecto.models.Correlatividad;
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
 import com.is1.proyecto.models.Estado;
 import com.is1.proyecto.models.Estudiante;
+import com.is1.proyecto.models.ExamenFinal;
+import com.is1.proyecto.models.InscripcionExamen;
 import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
 import com.is1.proyecto.models.User;
-import com.is1.proyecto.models.ExamenFinal;
-import com.is1.proyecto.models.InscripcionExamen;
 
 import spark.ModelAndView; 
 import spark.Request;
@@ -2517,18 +2517,7 @@ public class App {
         return "DOCENTE".equals(rol);
     }
 
-     
-
-
-
-
-
-
-
-
-
-
-
+    
 private static void registrarRutasDocente() {
  
     before("/docente/*", (req, res) -> {
@@ -2633,6 +2622,129 @@ private static void registrarRutasDocente() {
     }
     return null;
 });
+
+    get("/docente/alumnos", (req, res) -> {
+        Integer userId = req.session().attribute("userId");
+        Docente docente = Docente.findFirst("user_id = ?", userId);
+
+        if (docente == null) {
+            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
+            return null;
+        }
+
+        // Materias asignadas al docente
+        List<PeriodoAcademico> periodos = PeriodoAcademico.where(
+            "codigo_profesor = ?", docente.getCodigoProfesor()
+        );
+
+        // Armar lista de materias para el filtro
+        List<Map<String, Object>> materiasView = new ArrayList<>();
+        for (PeriodoAcademico p : periodos) {
+            Materia m = Materia.findFirst("cod_materia = ?", p.getCodMateria());
+            if (m != null) {
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("codMateria", m.getCodMateria());
+                mv.put("nombre", m.getNombre());
+                mv.put("fecha", p.getFecha());
+                materiasView.add(mv);
+            }
+        }
+
+        // Filtros opcionales
+        String codMateriaStr = req.queryParams("cod_materia");
+        String fechaFiltro   = req.queryParams("fecha");
+
+        List<Map<String, Object>> alumnosView = new ArrayList<>();
+
+        if (codMateriaStr != null && !codMateriaStr.isEmpty()) {
+            int codMateria = Integer.parseInt(codMateriaStr);
+
+            // Verificar que la materia pertenece al docente
+            PeriodoAcademico perm = PeriodoAcademico.findFirst(
+                "codigo_profesor = ? AND cod_materia = ?",
+                docente.getCodigoProfesor(), codMateria
+            );
+
+            if (perm == null) {
+                res.redirect("/docente/alumnos?errorMessage=No tenés permiso para esa materia.");
+                return null;
+            }
+
+            // Buscar alumnos inscriptos a esa materia
+            List<Estado> estados;
+            if (fechaFiltro != null && !fechaFiltro.isEmpty()) {
+                // Filtrar también por año de la fecha del periodo
+                estados = Estado.where("cod_materia = ?", codMateria);
+                List<Estado> filtrados = new ArrayList<>();
+                for (Estado e : estados) {
+                    PeriodoAcademico pa = PeriodoAcademico.findFirst(
+                        "cod_materia = ? AND codigo_profesor = ? AND fecha LIKE ?",
+                        codMateria, docente.getCodigoProfesor(), fechaFiltro + "%"
+                    );
+                    if (pa != null) filtrados.add(e);
+                }
+                estados = filtrados;
+            } else {
+                estados = Estado.where("cod_materia = ?", codMateria);
+            }
+
+            for (Estado e : estados) {
+                Estudiante estudiante = Estudiante.findFirst("dni = ?", e.getDniEstudiante());
+                Persona persona = Persona.findFirst("dni = ?", e.getDniEstudiante());
+
+                Map<String, Object> av = new HashMap<>();
+                av.put("dni",       e.getDniEstudiante());
+                av.put("nroLegajo", estudiante != null ? estudiante.getNroLegajo() : "-");
+                av.put("nombre",    persona != null ? persona.getNombre() : "");
+                av.put("apellido",  persona != null ? persona.getApellido() : "");
+                av.put("email",     estudiante != null ? estudiante.getEmail() : "");
+                av.put("estado",    e.getString("estado"));
+
+                // Badge de color según estado
+                String estadoClass;
+                if ("APROBADO".equals(e.getString("estado"))) {
+                    estadoClass = "bg-green-100 text-green-700";
+                } else if ("REGULAR".equals(e.getString("estado"))) {
+                    estadoClass = "bg-blue-100 text-blue-700";
+                } else if ("LIBRE".equals(e.getString("estado"))) {
+                    estadoClass = "bg-red-100 text-red-700";
+                } else {
+                    estadoClass = "bg-yellow-100 text-yellow-700"; // INSCRIPTO
+                }
+                av.put("estadoClass", estadoClass);
+
+                alumnosView.add(av);
+            }
+        }
+
+        // Fechas únicas para el filtro de período
+        List<String> fechasUnicas = new ArrayList<>();
+        for (PeriodoAcademico p : periodos) {
+            String anio = p.getFecha().substring(0, 4);
+            if (!fechasUnicas.contains(anio)) {
+                fechasUnicas.add(anio);
+            }
+        }
+        List<Map<String, Object>> fechasView = new ArrayList<>();
+        for (String f : fechasUnicas) {
+            Map<String, Object> fv = new HashMap<>();
+            fv.put("fecha", f);
+            fechasView.add(fv);
+        }
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("materias",       materiasView);
+        model.put("sinMaterias",    materiasView.isEmpty());
+        model.put("alumnos",        alumnosView);
+        model.put("sinAlumnos",     alumnosView.isEmpty());
+        model.put("mostrarTabla",   codMateriaStr != null && !codMateriaStr.isEmpty());
+        model.put("fechas",         fechasView);
+        model.put("successMessage", req.queryParams("successMessage"));
+        model.put("errorMessage",   req.queryParams("errorMessage"));
+
+        return new ModelAndView(model, "docente/alumnosInscriptos.mustache");
+
+    }, new MustacheTemplateEngine());
     }
 
 
