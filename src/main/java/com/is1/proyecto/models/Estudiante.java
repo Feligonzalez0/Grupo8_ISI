@@ -44,4 +44,20 @@ public class Estudiante extends Persona{
 
         estado.saveIt();
     }
+
+    public void inscribirseCarrera(Integer codCarrera) {
+        InscripcionCarrera existente = InscripcionCarrera.findFirst( "dni_estudiante = ? AND cod_carrera = ?", this.getDni(), codCarrera);
+
+        if(existente != null) {
+            throw new RuntimeException("Ya estás inscripto en una carrera");
+        }
+
+        InscripcionCarrera inscripcion = new InscripcionCarrera();
+
+        inscripcion.setDniEstudiante(this.getDni());
+        inscripcion.setCodCarrera(codCarrera);
+        inscripcion.setSituacion(Situacion.INGRESANTE);
+
+        inscripcion.saveIt();
+    }
 }

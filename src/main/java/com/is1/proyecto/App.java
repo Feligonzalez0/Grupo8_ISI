@@ -18,12 +18,14 @@ import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos pa
 import com.is1.proyecto.models.Estado;
 import com.is1.proyecto.models.Estudiante;
 import com.is1.proyecto.models.ExamenFinal;
+import com.is1.proyecto.models.InscripcionCarrera;
 import com.is1.proyecto.models.InscripcionExamen;
 import com.is1.proyecto.models.Materia;
 import com.is1.proyecto.models.MaterialEstudio;
 import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
+import com.is1.proyecto.models.Situacion;
 import com.is1.proyecto.models.User;
 
 import spark.ModelAndView; 
@@ -1329,6 +1331,114 @@ public class App {
             return null;
         });
         
+        get("/estudiante/carrera", (req, res) -> {
+
+            Integer userId = req.session().attribute("userId");
+            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+    
+            if(estudiante == null) {
+                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+                return null;
+            }
+    
+            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
+    
+            Map<String, Object> model = new HashMap<>();
+            model.put("nombre",    persona != null ? persona.getNombre()   : "");
+            model.put("apellido",  persona != null ? persona.getApellido() : "");
+            model.put("nroLegajo", estudiante.getNroLegajo());
+
+            InscripcionCarrera inscripcion = InscripcionCarrera.findFirst("dni_estudiante = ?", estudiante.getDni());
+    
+            if(inscripcion != null) {
+                Carrera carreraActual = Carrera.findFirst("cod_carrera = ?", inscripcion.getCodCarrera());
+                model.put("yaInscripto",       true);
+                model.put("carreraActual",     carreraActual != null ? carreraActual.getNombre()      : "Sin nombre");
+                model.put("descripcionActual", carreraActual != null ? carreraActual.getDescripcion() : "");
+                model.put("situacionCarrera",  inscripcion.getSituacion() != null ? inscripcion.getSituacion().name() : "");
+                model.put("esIngresante",      Situacion.INGRESANTE.equals(inscripcion.getSituacion()));
+                model.put("esAvanzado",        Situacion.AVANZADO.equals(inscripcion.getSituacion()));
+            } else {
+                List<Carrera> carrerasDB = Carrera.findAll();
+                List<Map<String, Object>> carreras = new ArrayList<>();
+
+                for(Carrera c : carrerasDB) {
+                    Map<String, Object> cv = new HashMap<>();
+                    cv.put("codCarrera",  c.getCodigo());
+                    cv.put("nombre",      c.getNombre());
+                    cv.put("descripcion", c.getDescripcion() != null ? c.getDescripcion() : "");
+                    carreras.add(cv);
+                }
+
+                model.put("yaInscripto", false);
+                model.put("carreras",    carreras);
+                model.put("sinCarreras", carreras.isEmpty());
+            }
+    
+            String success = req.queryParams("successMessage");
+            String error   = req.queryParams("errorMessage");
+
+            if(success != null) {
+                model.put("successMessage", success);
+            }
+            if(error   != null) {
+            model.put("errorMessage",   error);
+            }
+    
+            return new ModelAndView(model, "estudiante/inscripcionCarrera.mustache");
+    
+        }, new MustacheTemplateEngine());
+
+        post("/estudiante/carrera/inscribir", (req, res) -> {
+    
+            Integer userId = req.session().attribute("userId");
+            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+    
+            if(estudiante == null) {
+                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+                return null;
+            }
+
+            InscripcionCarrera inscripcionExistente = InscripcionCarrera.findFirst("dni_estudiante = ?", estudiante.getDni());
+            if(inscripcionExistente != null) {
+                res.redirect("/estudiante/carrera?errorMessage=Ya estás inscripto en una carrera.");
+                return null;
+            }
+    
+            String codCarreraStr = req.queryParams("cod_carrera");
+            if (codCarreraStr == null || codCarreraStr.isEmpty()) {
+                res.redirect("/estudiante/carrera?errorMessage=Debe seleccionar una carrera.");
+                return null;
+            }
+    
+            Integer codCarrera;
+            try {
+                codCarrera = Integer.parseInt(codCarreraStr);
+            } catch (NumberFormatException e) {
+                res.redirect("/estudiante/carrera?errorMessage=Carrera inválida.");
+                return null;
+            }
+    
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
+            if(carrera == null) {
+                res.redirect("/estudiante/carrera?errorMessage=La carrera seleccionada no existe.");
+                return null;
+            }
+    
+            try {
+                estudiante.inscribirseCarrera(codCarrera);
+                res.redirect("/estudiante/carrera?successMessage=Te inscribiste correctamente a " + carrera.getNombre() + ".");
+            } catch (Exception e) {
+                try {
+                    res.redirect("/estudiante/carrera?errorMessage=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
+                } catch (Exception ex) {
+                    res.redirect("/estudiante/carrera?errorMessage=Error al inscribirse a la carrera.");
+                }
+            }
+
+            return null;
+        });
+
         // Con esto podemos hacer localhost:puerto/admin/docentes/agregar
         get("/admin/estudiantes/agregar", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
