@@ -2414,6 +2414,8 @@ public class App {
 
             PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", m.getCodPlan());
             mv.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCodCarrera());
+            mv.put("carrera", carrera != null ? carrera.getNombre() : "Sin carrera");
 
             materias.add(mv);
         }
@@ -2604,7 +2606,8 @@ public class App {
 
             PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", materia.getCodPlan());
             materiaView.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
-
+            Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCodCarrera());
+            materiaView.put("carrera", carrera != null ? carrera.getNombre() : "Sin carrera");
 
             materias.add(materiaView);
         }
