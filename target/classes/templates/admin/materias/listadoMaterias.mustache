@@ -21,6 +21,7 @@
 
             <thead class="bg-gray-100">
                 <tr>
+                    <th class="p-3 border">Carrera</th>
                     <th class="p-3 border">Codigo</th>
                     <th class="p-3 border">Nombre</th>
                     <th class="p-3 border">Descripcion</th>
@@ -33,6 +34,10 @@
                 {{#materias}}
                 <tr class="hover:bg-gray-50">
 
+                    <td class="p-3 border text-center">
+                        {{carrera}}
+                    </td>
+                    
                     <td class="p-3 border text-center">
                         {{codMateria}}
                     </td>
