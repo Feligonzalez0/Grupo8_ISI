@@ -1,21 +1,21 @@
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PlanDeEstudios.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Persona.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\User.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\InscripcionExamen.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Rol.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Cargo.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Correlatividad.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\PeriodoAcademico.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\TEstado.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Situacion.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\App.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Materia.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Carrera.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Admin.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estado.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Estudiante.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\ExamenFinal.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\InscripcionCarrera.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\MaterialEstudio.java
-C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\config\DBConfigSingleton.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/InscripcionExamen.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/config/DBConfigSingleton.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PlanDeEstudios.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/TEstado.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/MaterialEstudio.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Cargo.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/InscripcionCarrera.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Correlatividad.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Rol.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Carrera.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/PeriodoAcademico.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estudiante.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Docente.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/App.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Estado.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Materia.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/User.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Situacion.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Admin.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/Persona.java
+/home/facualtamirano/Documents/Universidad/Ing. Software II/Grupo8_ISI/src/main/java/com/is1/proyecto/models/ExamenFinal.java

@@ -103,11 +103,29 @@
                     <td class="py-3 px-4 text-gray-700">{{nombre}}</td>
                     <td class="py-3 px-4 text-gray-600">{{dni}}</td>
                     <td class="py-3 px-4 text-gray-600">{{email}}</td>
-                    <td class="py-3 px-4">
-                        <span class="px-3 py-1 rounded-full text-xs font-semibold {{estadoClass}}">
-                            {{estado}}
-                        </span>
-                    </td>
+                    <<td class="py-3 px-4">
+                    {{^esInscripto}}
+                    <span class="px-3 py-1 rounded-full text-xs font-semibold {{estadoClass}}">
+                        {{estado}}
+                    </span>
+                    {{/esInscripto}}
+
+                    {{#esInscripto}}
+                    <form method="POST" action="/docente/alumnos/estadoCursada" class="flex items-center justify-center gap-2">
+                        <input type="hidden" name="dni_estudiante" value="{{dni}}"/>
+                        <input type="hidden" name="cod_materia"    value="{{codMateria}}"/>
+                        <select name="nuevo_estado"
+                                class="border border-gray-300 rounded-lg px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-purple-400">
+                            <option value="REGULAR">Regular</option>
+                            <option value="LIBRE">Libre</option>
+                        </select>
+                        <button type="submit"
+                                class="bg-purple-500 hover:bg-purple-600 text-white text-xs font-semibold px-3 py-1 rounded-lg transition">
+                            Guardar
+                        </button>
+                    </form>
+                    {{/esInscripto}}
+                </td>
                 </tr>
                 {{/alumnos}}
             </tbody>
