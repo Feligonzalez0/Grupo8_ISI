@@ -2715,7 +2715,8 @@ private static void registrarRutasDocente() {
 
                 alumnosView.add(av);
             }
-        }
+            
+    }
 
         // Fechas únicas para el filtro de período
         List<String> fechasUnicas = new ArrayList<>();
@@ -2745,6 +2746,164 @@ private static void registrarRutasDocente() {
         return new ModelAndView(model, "docente/alumnosInscriptos.mustache");
 
     }, new MustacheTemplateEngine());
+
+    get("/estudiante/avance", (req, res) -> {
+    Integer userId = req.session().attribute("userId");
+    Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+
+    if (estudiante == null) {
+        res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+        return null;
+    }
+
+    Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
+
+    // Todos los estados del estudiante
+    List<Estado> estados = Estado.where("dni_estudiante = ?", estudiante.getDni());
+
+    List<Map<String, Object>> aprobadas  = new ArrayList<>();
+    List<Map<String, Object>> pendientes = new ArrayList<>();
+
+    for (Estado e : estados) {
+        Materia materia = Materia.findFirst("cod_materia = ?", e.getCodMateria());
+        if (materia == null) continue;
+
+        Map<String, Object> mv = new HashMap<>();
+        mv.put("nombre",     materia.getNombre());
+        mv.put("codMateria", materia.getCodMateria());
+        mv.put("estado",     e.getString("estado"));
+
+        String estadoClass;
+        if ("APROBADO".equals(e.getString("estado"))) {
+            estadoClass = "bg-green-100 text-green-700";
+        } else if ("REGULAR".equals(e.getString("estado"))) {
+            estadoClass = "bg-blue-100 text-blue-700";
+        } else if ("LIBRE".equals(e.getString("estado"))) {
+            estadoClass = "bg-red-100 text-red-700";
+        } else {
+            estadoClass = "bg-yellow-100 text-yellow-700"; // INSCRIPTO
+        }
+        mv.put("estadoClass", estadoClass);
+
+        if ("APROBADO".equals(e.getString("estado"))) {
+            aprobadas.add(mv);
+        } else {
+            pendientes.add(mv);
+        }
+    }
+
+    // Buscar el plan del estudiante para calcular porcentaje
+    // El plan se obtiene a través de la materia → cod_plan → PlanDeEstudios
+    int totalMaterias = 0;
+    if (!estados.isEmpty()) {
+        Estado primerEstado = estados.get(0);
+        Materia primerMateria = Materia.findFirst("cod_materia = ?", primerEstado.getCodMateria());
+        if (primerMateria != null) {
+            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", primerMateria.getCodPlan());
+            if (plan != null) {
+                totalMaterias = plan.getCantidadMaterias();
+            }
+        }
+    }
+
+    int cantAprobadas = aprobadas.size();
+    double porcentaje = totalMaterias > 0
+        ? Math.round((cantAprobadas * 100.0 / totalMaterias) * 10.0) / 10.0
+        : 0.0;
+
+    Map<String, Object> model = new HashMap<>();
+    model.put("nombre",        persona != null ? persona.getNombre() : "");
+    model.put("apellido",      persona != null ? persona.getApellido() : "");
+    model.put("nroLegajo",     estudiante.getNroLegajo());
+    model.put("aprobadas",     aprobadas);
+    model.put("pendientes",    pendientes);
+    model.put("cantAprobadas", cantAprobadas);
+    model.put("totalMaterias", totalMaterias);
+    model.put("porcentaje",    porcentaje);
+    model.put("sinEstados",    estados.isEmpty());
+
+    return new ModelAndView(model, "estudiante/avanceAcademico.mustache");
+
+}, new MustacheTemplateEngine());
+
+        get("/estudiante/avance", (req, res) -> {
+            Integer userId = req.session().attribute("userId");
+            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+
+            if (estudiante == null) {
+                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+                return null;
+            }
+
+            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
+
+            // Todos los estados del estudiante
+            List<Estado> estados = Estado.where("dni_estudiante = ?", estudiante.getDni());
+
+            List<Map<String, Object>> aprobadas  = new ArrayList<>();
+            List<Map<String, Object>> pendientes = new ArrayList<>();
+
+            for (Estado e : estados) {
+                Materia materia = Materia.findFirst("cod_materia = ?", e.getCodMateria());
+                if (materia == null) continue;
+
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("nombre",     materia.getNombre());
+                mv.put("codMateria", materia.getCodMateria());
+                mv.put("estado",     e.getString("estado"));
+
+                String estadoClass;
+                if ("APROBADO".equals(e.getString("estado"))) {
+                    estadoClass = "bg-green-100 text-green-700";
+                } else if ("REGULAR".equals(e.getString("estado"))) {
+                    estadoClass = "bg-blue-100 text-blue-700";
+                } else if ("LIBRE".equals(e.getString("estado"))) {
+                    estadoClass = "bg-red-100 text-red-700";
+                } else {
+                    estadoClass = "bg-yellow-100 text-yellow-700"; // INSCRIPTO
+                }
+                mv.put("estadoClass", estadoClass);
+
+                if ("APROBADO".equals(e.getString("estado"))) {
+                    aprobadas.add(mv);
+                } else {
+                    pendientes.add(mv);
+                }
+            }
+
+            // Buscar el plan del estudiante para calcular porcentaje
+            // El plan se obtiene a través de la materia → cod_plan → PlanDeEstudios
+            int totalMaterias = 0;
+            if (!estados.isEmpty()) {
+                Estado primerEstado = estados.get(0);
+                Materia primerMateria = Materia.findFirst("cod_materia = ?", primerEstado.getCodMateria());
+                if (primerMateria != null) {
+                    PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", primerMateria.getCodPlan());
+                    if (plan != null) {
+                        totalMaterias = plan.getCantidadMaterias();
+                    }
+                }
+            }
+
+            int cantAprobadas = aprobadas.size();
+            double porcentaje = totalMaterias > 0
+                ? Math.round((cantAprobadas * 100.0 / totalMaterias) * 10.0) / 10.0
+                : 0.0;
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("nombre",        persona != null ? persona.getNombre() : "");
+            model.put("apellido",      persona != null ? persona.getApellido() : "");
+            model.put("nroLegajo",     estudiante.getNroLegajo());
+            model.put("aprobadas",     aprobadas);
+            model.put("pendientes",    pendientes);
+            model.put("cantAprobadas", cantAprobadas);
+            model.put("totalMaterias", totalMaterias);
+            model.put("porcentaje",    porcentaje);
+            model.put("sinEstados",    estados.isEmpty());
+
+            return new ModelAndView(model, "estudiante/avanceAcademico.mustache");
+
+        }, new MustacheTemplateEngine());
     }
 
 
