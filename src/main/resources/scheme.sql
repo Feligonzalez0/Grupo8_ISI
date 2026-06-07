@@ -121,3 +121,17 @@ CREATE TABLE IF NOT EXISTS InscripcionExamen (
     FOREIGN KEY (dni_estudiante) REFERENCES Estudiante(dni),
     FOREIGN KEY (id_examen)      REFERENCES ExamenFinal(id)
 );
+
+CREATE TABLE IF NOT EXISTS MaterialEstudio (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    cod_materia INTEGER NOT NULL,
+    codigo_profesor INTEGER NOT NULL,
+    nombre TEXT NOT NULL,
+    descripcion TEXT,
+    nombre_archivo TEXT NOT NULL,
+    ruta_archivo TEXT NOT NULL,
+    fecha_subida TEXT NOT NULL,
+
+    FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia),
+    FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor)
+);

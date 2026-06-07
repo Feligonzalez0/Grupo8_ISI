@@ -20,6 +20,7 @@ import com.is1.proyecto.models.Estudiante;
 import com.is1.proyecto.models.ExamenFinal;
 import com.is1.proyecto.models.InscripcionExamen;
 import com.is1.proyecto.models.Materia;
+import com.is1.proyecto.models.MaterialEstudio;
 import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.models.Persona;
 import com.is1.proyecto.models.PlanDeEstudios;
@@ -2904,6 +2905,179 @@ private static void registrarRutasDocente() {
             return new ModelAndView(model, "estudiante/avanceAcademico.mustache");
 
         }, new MustacheTemplateEngine());
+
+        // Configurar carpeta de uploads
+        String uploadDir = "materialEstudio";
+        new java.io.File(uploadDir).mkdirs();
+
+        // GET: ver materiales subidos y formulario
+        get("/docente/material", (req, res) -> {
+            Integer userId = req.session().attribute("userId");
+            Docente docente = Docente.findFirst("user_id = ?", userId);
+
+            if (docente == null) {
+                res.redirect("/dashboard?error=No se encontró el perfil de docente.");
+                return null;
+            }
+
+            // Materias del docente
+            List<PeriodoAcademico> periodos = PeriodoAcademico.where(
+                "codigo_profesor = ?", docente.getCodigoProfesor()
+            );
+            List<Map<String, Object>> materiasView = new ArrayList<>();
+            for (PeriodoAcademico p : periodos) {
+                Materia m = Materia.findFirst("cod_materia = ?", p.getCodMateria());
+                if (m != null) {
+                    Map<String, Object> mv = new HashMap<>();
+                    mv.put("codMateria", m.getCodMateria());
+                    mv.put("nombre",     m.getNombre());
+                    materiasView.add(mv);
+                }
+            }
+
+            // Materiales ya subidos
+            List<MaterialEstudio> materialesDB = MaterialEstudio.where(
+                "codigo_profesor = ?", docente.getCodigoProfesor()
+            );
+            List<Map<String, Object>> materiales = new ArrayList<>();
+            for (MaterialEstudio mat : materialesDB) {
+                Materia m = Materia.findFirst("cod_materia = ?", mat.getCodMateria());
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("id",            mat.getId());
+                mv.put("nombre",        mat.getNombre());
+                mv.put("descripcion",   mat.getDescripcion());
+                mv.put("nombreArchivo", mat.getNombreArchivo());
+                mv.put("fechaSubida",   mat.getFechaSubida());
+                mv.put("nombreMateria", m != null ? m.getNombre() : "Sin materia");
+                mv.put("idDescarga",    mat.getId());
+                materiales.add(mv);
+            }
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("materias",       materiasView);
+            model.put("sinMaterias",    materiasView.isEmpty());
+            model.put("materiales",     materiales);
+            model.put("sinMateriales",  materiales.isEmpty());
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "docente/materialEstudio.mustache");
+
+        }, new MustacheTemplateEngine());
+
+        // POST: subir archivo
+        post("/docente/material/subir", (req, res) -> {
+            Integer userId = req.session().attribute("userId");
+            Docente docente = Docente.findFirst("user_id = ?", userId);
+
+            if (docente == null) {
+                res.redirect("/dashboard");
+                return null;
+            }
+
+            // Habilitar multipart
+            req.attribute("org.eclipse.jetty.multipartConfig",
+                new javax.servlet.MultipartConfigElement("materialEstudio"));
+
+            try {
+                // Leer campos del form
+                String nombre      = req.raw().getPart("nombre") != null
+                    ? new String(req.raw().getPart("nombre").getInputStream().readAllBytes())
+                    : "";
+                String descripcion = req.raw().getPart("descripcion") != null
+                    ? new String(req.raw().getPart("descripcion").getInputStream().readAllBytes())
+                    : "";
+                String codMateriaStr = req.raw().getPart("cod_materia") != null
+                    ? new String(req.raw().getPart("cod_materia").getInputStream().readAllBytes())
+                    : "";
+
+                javax.servlet.http.Part filePart = req.raw().getPart("archivo");
+
+                if (nombre.isEmpty() || codMateriaStr.isEmpty() || filePart == null || filePart.getSize() == 0) {
+                    res.redirect("/docente/material?errorMessage=Todos los campos son obligatorios.");
+                    return null;
+                }
+
+                // Validar formato
+                String nombreArchivo = filePart.getSubmittedFileName();
+                String extension = nombreArchivo.substring(nombreArchivo.lastIndexOf(".") + 1).toLowerCase();
+                List<String> formatosPermitidos = List.of("pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "jpg", "png");
+
+                if (!formatosPermitidos.contains(extension)) {
+                    res.redirect("/docente/material?errorMessage=Formato no permitido. Usá: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG.");
+                    return null;
+                }
+
+                // Verificar que la materia pertenece al docente
+                int codMateria = Integer.parseInt(codMateriaStr);
+                PeriodoAcademico perm = PeriodoAcademico.findFirst(
+                    "codigo_profesor = ? AND cod_materia = ?",
+                    docente.getCodigoProfesor(), codMateria
+                );
+                if (perm == null) {
+                    res.redirect("/docente/material?errorMessage=No tenés permiso para esa materia.");
+                    return null;
+                }
+
+                // Guardar archivo con nombre único
+                String nombreUnico = System.currentTimeMillis() + "_" + nombreArchivo;
+                String rutaArchivo = uploadDir + "/" + nombreUnico;
+
+                try (java.io.InputStream input = filePart.getInputStream();
+                    java.io.FileOutputStream output = new java.io.FileOutputStream(rutaArchivo)) {
+                    input.transferTo(output);
+                }
+
+                // Guardar en DB
+                String fecha = java.time.LocalDate.now().toString();
+                MaterialEstudio material = new MaterialEstudio();
+                material.setCodMateria(codMateria);
+                material.setCodigoProfesor(docente.getCodigoProfesor());
+                material.setNombre(nombre);
+                material.setDescripcion(descripcion);
+                material.setNombreArchivo(nombreArchivo);
+                material.setRutaArchivo(rutaArchivo);
+                material.setFechaSubida(fecha);
+                material.saveIt();
+
+                res.redirect("/docente/material?successMessage=Material subido correctamente.");
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/docente/material?errorMessage=Error al subir el archivo: " + e.getMessage());
+            }
+
+            return null;
+        });
+
+        // GET: descargar archivo
+        get("/material/descargar/:id", (req, res) -> {
+            Integer id = Integer.parseInt(req.params(":id"));
+            MaterialEstudio material = MaterialEstudio.findById(id);
+
+            if (material == null) {
+                res.redirect("/dashboard?error=Material no encontrado.");
+                return null;
+            }
+
+            java.io.File archivo = new java.io.File(material.getRutaArchivo());
+            if (!archivo.exists()) {
+                res.redirect("/dashboard?error=El archivo no existe en el servidor.");
+                return null;
+            }
+
+            res.raw().setContentType("application/octet-stream");
+            res.raw().setHeader("Content-Disposition", "attachment; filename=\"" + material.getNombreArchivo() + "\"");
+
+            try (java.io.InputStream is = new java.io.FileInputStream(archivo);
+                java.io.OutputStream os = res.raw().getOutputStream()) {
+                is.transferTo(os);
+                os.flush();
+            }
+
+            return null;
+        });
+
     }
 
 
@@ -3025,6 +3199,44 @@ private static void registrarRutasDocente() {
         }
         return null;
     });
+
+    // GET: ver materiales disponibles para el estudiante
+    get("/estudiante/material", (req, res) -> {
+        Integer userId = req.session().attribute("userId");
+        Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
+
+        if (estudiante == null) {
+            res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
+            return null;
+        }
+
+        // Materias en las que está inscripto
+        List<Estado> estados = Estado.where("dni_estudiante = ?", estudiante.getDni());
+
+        List<Map<String, Object>> materiales = new ArrayList<>();
+        for (Estado e : estados) {
+            List<MaterialEstudio> matsDB = MaterialEstudio.where("cod_materia = ?", e.getCodMateria());
+            Materia materia = Materia.findFirst("cod_materia = ?", e.getCodMateria());
+
+            for (MaterialEstudio mat : matsDB) {
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("id",            mat.getId());
+                mv.put("nombre",        mat.getNombre());
+                mv.put("descripcion",   mat.getDescripcion());
+                mv.put("nombreArchivo", mat.getNombreArchivo());
+                mv.put("fechaSubida",   mat.getFechaSubida());
+                mv.put("nombreMateria", materia != null ? materia.getNombre() : "Sin materia");
+                materiales.add(mv);
+            }
+        }
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("materiales",    materiales);
+        model.put("sinMateriales", materiales.isEmpty());
+
+        return new ModelAndView(model, "estudiante/materialEstudio.mustache");
+
+    }, new MustacheTemplateEngine());
 }
     
 } // Fin de la clase App

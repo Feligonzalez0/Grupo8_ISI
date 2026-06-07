@@ -16,3 +16,4 @@ com/is1/proyecto/models/Estudiante.class
 com/is1/proyecto/models/PeriodoAcademico.class
 com/is1/proyecto/models/PlanDeEstudios.class
 com/is1/proyecto/models/Correlatividad.class
+com/is1/proyecto/models/MaterialEstudio.class
