@@ -114,6 +114,22 @@ public class App {
                 halt();
             }
         });
+
+        before("/dashboard", (req, res) -> {
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/");
+                halt();
+            }
+        });
+
+        before("/profile", (req, res) -> {
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if (loggedIn == null || !loggedIn) {
+                res.redirect("/");
+                halt();
+            }
+        });
         
         try {
             Base.open(
@@ -2525,7 +2541,7 @@ private static void registrarRutasDocente() {
         Boolean loggedIn = req.session().attribute("loggedIn");
  
         if (loggedIn == null || !loggedIn) {
-            res.redirect("/login");
+            res.redirect("/");
             halt();
         }
  
@@ -3089,7 +3105,7 @@ private static void registrarRutasDocente() {
     before("/estudiante/*", (req, res) -> {
         Boolean loggedIn = req.session().attribute("loggedIn");
         if (loggedIn == null || !loggedIn) {
-            res.redirect("/login");
+            res.redirect("/");
             halt();
         }
         String rol = req.session().attribute("userRol");
