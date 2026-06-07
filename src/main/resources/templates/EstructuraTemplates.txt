@@ -1,5 +1,9 @@
 src/main/resources/templates/
-├── ...
+├── user_from.mustache
+├── perfil.mustache
+├── login.mustache
+├── hello.mustache
+├── error.mustache
 ├── dashboard.mustache  (MODIFICACION)
 │
 ├── admin/
@@ -46,8 +50,13 @@ src/main/resources/templates/
 │
 ├── docente/
 |   ├── crearExamen.mustache    (NUEVO)
+|   ├── alumnosInscriptos.mustache    (NUEVO)
+|   └── materialEstudio.mustache   (NUEVO)
 |
 ├── estudiante/
 |   ├── inscripcion.mustache    (NUEVO)
 |   ├── estudianteDashboard.mustache    (NUEVO)
-|   ├── estudianteDashboard     (NUEVO)
+|   ├── estudianteDashboard.mustache     (NUEVO)
+|   ├── inscripcionCarrera.mustache    (NUEVO)
+|   ├── materialEstudio.mustache    (NUEVO)
+|   └── examenesDisponibles.mustache     (NUEVO)
