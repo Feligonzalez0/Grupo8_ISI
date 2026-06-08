@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Auditoría</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 p-6">
+
+<div class="max-w-7xl mx-auto">
+        <h1 class="text-3xl font-bold text-indigo-700 mb-6">Auditoría de acciones</h1>
+        <div class="bg-white rounded-xl shadow-md p-6">
+            {{#sinLogs}}
+            <p class="text-gray-600">No hay acciones registradas.</p>
+            {{/sinLogs}}
+            {{^sinLogs}}
+                <table class="min-w-full border border-gray-200">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="p-3 border">Usuario</th>
+                            <th class="p-3 border">Acción</th>
+                            <th class="p-3 border">Detalle</th>
+                            <th class="p-3 border">Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {{#logs}}
+                            <tr class="hover:bg-gray-50">
+                                <td class="p-3 border text-center">{{usuario}}</td>
+                                <td class="p-3 border text-center">{{accion}}</td>
+                                <td class="p-3 border text-center">{{detalle}}</td>
+                                <td class="p-3 border text-center">{{fecha}}</td>
+                            </tr>
+                        {{/logs}}
+                    </tbody>
+                </table>
+           {{/sinLogs}}
+        </div>
+</div>
+</body>
+</html>
