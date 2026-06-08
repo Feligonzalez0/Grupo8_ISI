@@ -3232,14 +3232,6 @@ private static void registrarRutasDocente() {
                 } else {
                     pendientes.add(mv);
                 }
-
-                NotaFinal nota = NotaFinal.findFirst("dni_estudiante = ? and cod_materia = ?", estudiante.getDni(), materia.getCodMateria());
-
-                if (nota != null) {
-                    mv.put("notaFinal", nota.getNotaFinal());
-                } else {
-                    mv.put("notaFinal", "-");
-                }
             }
 
             // Buscar el plan del estudiante para calcular porcentaje
