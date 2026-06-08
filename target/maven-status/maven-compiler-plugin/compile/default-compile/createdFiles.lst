@@ -18,4 +18,5 @@ com\is1\proyecto\models\TEstado.class
 com\is1\proyecto\models\PlanDeEstudios.class
 com\is1\proyecto\models\PeriodoAcademico.class
 com\is1\proyecto\config\DBConfigSingleton.class
+com\is1\proyecto\models\AuditoriaAdmin.class
 com\is1\proyecto\models\Correlatividad.class

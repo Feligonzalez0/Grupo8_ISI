@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.models.AuditoriaAdmin;
 import com.is1.proyecto.models.Carrera;
 import com.is1.proyecto.models.Correlatividad;
 import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
@@ -159,17 +160,6 @@ public class App {
             );
 
             ejecutarScheme();
-            try {
-                Base.exec(
-                    "CREATE TABLE IF NOT EXISTS AuditoriaAdmin (" +
-                    "id INTEGER PRIMARY KEY AUTOINCREMENT," +
-                    "usuario TEXT," +
-                    "accion TEXT," +
-                    "detalle TEXT," +
-                    "fecha TEXT" +
-                    ")"
-                );
-            } catch (Exception ignored) {}
             Base.close();
 
         } catch (Exception e) {
@@ -2832,17 +2822,15 @@ public class App {
     get("/admin/auditoria", (req, res) -> {
         Map<String, Object> model = new HashMap<>();
 
-        List<Map> logsDB = Base.findAll(
-            "SELECT usuario, accion, detalle, fecha FROM AuditoriaAdmin ORDER BY id DESC"
-        );
+        List<AuditoriaAdmin> logsDB = AuditoriaAdmin.findAll().orderBy("id DESC");
 
         List<Map<String, Object>> logs = new ArrayList<>();
-        for (Map log : logsDB) {
+        for(AuditoriaAdmin log : logsDB) {
             Map<String, Object> logView = new HashMap<>();
-            logView.put("usuario", log.get("usuario"));
-            logView.put("accion",  log.get("accion"));
-            logView.put("detalle", log.get("detalle"));
-            logView.put("fecha",   log.get("fecha"));
+            logView.put("usuario", log.getUsuario());
+            logView.put("accion",  log.getAccion());
+            logView.put("detalle", log.getDetalle());
+            logView.put("fecha",   log.getFecha());
             logs.add(logView);
         }
 
@@ -2878,11 +2866,7 @@ public class App {
     private static void registrarAuditoria(Request req, String accion, String detalle) {
         try {
             String usuario = req.session().attribute("currentUserUsername");
-            String fecha = java.time.LocalDateTime.now().toString();
-            Base.exec(
-                "INSERT INTO AuditoriaAdmin (usuario, accion, detalle, fecha) VALUES (?, ?, ?, ?)",
-                usuario, accion, detalle, fecha
-            );
+            AuditoriaAdmin.registrar(usuario, accion, detalle);
             logger.info("Auditoría registrada: usuario={}, accion={}, detalle={}", usuario, accion, detalle);
         } catch (Exception e) {
             System.err.println("ERROR AUDITORIA: " + e.getMessage());

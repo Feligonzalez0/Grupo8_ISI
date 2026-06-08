@@ -146,3 +146,11 @@ CREATE TABLE IF NOT EXISTS MaterialEstudio (
     FOREIGN KEY (cod_materia) REFERENCES Materia(cod_materia),
     FOREIGN KEY (codigo_profesor) REFERENCES Docente(codigo_profesor)
 );
+
+CREATE TABLE IF NOT EXISTS AuditoriaAdmin (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    usuario TEXT,
+    accion TEXT,
+    detalle TEXT,
+    fecha TEXT
+);
