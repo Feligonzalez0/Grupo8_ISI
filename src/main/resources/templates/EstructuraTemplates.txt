@@ -1,6 +1,7 @@
 src/main/resources/templates/
 ├── user_from.mustache
 ├── perfil.mustache
+├── configuracion.mustache  (NUEVO)
 ├── login.mustache
 ├── hello.mustache
 ├── error.mustache
@@ -31,7 +32,7 @@ src/main/resources/templates/
 │   │   ├── editarDocente.mustache
 │   │   ├── eliminarDocente.mustache
 │   │   └── listadoDocentes.mustache
-|   |   └── materiasDocente.mustache    (NUEVO)
+|   |   └── materiasDocente.mustache
 │   │
 │   ├── planes/
 │   │   └── planesDashboard.mustache
@@ -46,17 +47,18 @@ src/main/resources/templates/
 │       ├── editarEstudiante.mustache
 │       ├── eliminarEstudiante.mustache
 │       └── listadoEstudiantes.mustache
-│       └── inscribirMateria.mustache   (NUEVO)
+│       └── inscribirMateria.mustache
 │
 ├── docente/
 |   ├── crearExamen.mustache    (NUEVO)
 |   ├── alumnosInscriptos.mustache    (NUEVO)
+|   ├── notasFinales.mustache    (NUEVO)
 |   └── materialEstudio.mustache   (NUEVO)
 |
 ├── estudiante/
 |   ├── inscripcion.mustache    (NUEVO)
 |   ├── estudianteDashboard.mustache    (NUEVO)
-|   ├── estudianteDashboard.mustache     (NUEVO)
+|   ├── avanceAcademico.mustache     (NUEVO)
 |   ├── inscripcionCarrera.mustache    (NUEVO)
 |   ├── materialEstudio.mustache    (NUEVO)
 |   └── examenesDisponibles.mustache     (NUEVO)

@@ -132,6 +132,22 @@ public class App {
                 halt();
             }
         });
+
+        before("/configuracion", (req, res) -> {
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if(loggedIn == null || !loggedIn) {
+                res.redirect("/");
+                halt();
+            }
+        });
+ 
+        before("/configuracion/*", (req, res) -> {
+            Boolean loggedIn = req.session().attribute("loggedIn");
+            if(loggedIn == null || !loggedIn) {
+                res.redirect("/");
+                halt();
+            }
+        });
         
         try {
             Base.open(
@@ -492,6 +508,153 @@ public class App {
             return new ModelAndView(model, "perfil.mustache");
 
         }, new MustacheTemplateEngine()); 
+
+        get("/configuracion", (req, res) -> {
+            String currentUsername = req.session().attribute("currentUserUsername");
+            Boolean loggedIn = req.session().attribute("loggedIn");
+ 
+            if(currentUsername == null || loggedIn == null || !loggedIn) {
+                res.redirect("/?error=Debes iniciar sesion para acceder a esta pagina.");
+                return null;
+            }
+ 
+            User usuario = User.findFirst("name = ?", currentUsername);
+ 
+            if(usuario == null) {
+                req.session().invalidate();
+                res.redirect("/?error=Sesion invalida.");
+                return null;
+            }
+ 
+            Map<String, Object> model = new HashMap<>();
+            model.put("usuario", usuario);
+ 
+            String rol = usuario.getString("rol");
+            model.put("esAdmin", "ADMINISTRADOR".equals(rol));
+            model.put("esDocente", "DOCENTE".equals(rol));
+            model.put("esAlumno", "ALUMNO".equals(rol));
+ 
+            if("DOCENTE".equals(rol)) {
+                Docente docente = Docente.findFirst("user_id = ?", usuario.getInteger("id"));
+                if(docente != null) {
+                    Persona persona = Persona.findFirst("dni = ?", docente.getInteger("dni"));
+                    model.put("docente", docente);
+                    model.put("persona", persona);
+                }
+            }
+ 
+            if("ALUMNO".equals(rol)) {
+                Estudiante estudiante = Estudiante.findFirst("user_id = ?", usuario.getInteger("id"));
+                if(estudiante != null) {
+                    Persona persona = Persona.findFirst("dni = ?", estudiante.getInteger("dni"));
+                    model.put("estudiante", estudiante);
+                    model.put("persona", persona);
+                }
+            }
+ 
+            String success = req.queryParams("successMessage");
+            String error = req.queryParams("errorMessage");
+
+            if(success != null && !success.isEmpty()) {
+                model.put("successMessage", success);
+            }
+            if(error != null && !error.isEmpty()) {
+                model.put("errorMessage",   error);
+            }
+ 
+            return new ModelAndView(model, "configuracion.mustache");
+ 
+        }, new MustacheTemplateEngine());
+ 
+        post("/configuracion/password", (req, res) -> {
+            String currentUsername = req.session().attribute("currentUserUsername");
+            User usuario = User.findFirst("name = ?", currentUsername);
+ 
+            if(usuario == null) {
+                res.redirect("/configuracion?errorMessage=Sesión inválida.");
+                return null;
+            }
+ 
+            String passwordActual = req.queryParams("password_actual");
+            String passwordNueva = req.queryParams("password_nueva");
+            String passwordConfirm = req.queryParams("password_confirm");
+ 
+            if(passwordActual == null || passwordActual.isEmpty() || passwordNueva == null || passwordNueva.isEmpty() || passwordConfirm == null || passwordConfirm.isEmpty()) {
+                res.redirect("/configuracion?errorMessage=Todos+los+campos+son+obligatorios.");
+                return null;
+            }
+ 
+           try {
+                if(!BCrypt.checkpw(passwordActual, usuario.getString("password"))) {
+                    res.redirect("/configuracion?errorMessage=La+contrasena+actual+es+incorrecta.");
+                    return null;
+                }
+            } catch (Exception e) {
+                res.redirect("/configuracion?errorMessage=Error+al+verificar+la+contrasena+actual.");
+                return null;
+            }
+ 
+            if(!passwordNueva.equals(passwordConfirm)) {
+                res.redirect("/configuracion?errorMessage=Las+contrasenas+nuevas+no+coinciden.");
+                return null;
+            }
+ 
+            try {
+                usuario.set("password", BCrypt.hashpw(passwordNueva, BCrypt.gensalt()));
+                usuario.saveIt();
+                res.redirect("/configuracion?successMessage=Contrasena+actualizada+correctamente.");
+            } catch (Exception e) {
+                res.redirect("/configuracion?errorMessage=Error+al+guardar+la+contrasena.");
+            }
+
+            return null;
+        });
+ 
+        post("/configuracion/datos", (req, res) -> {
+            String currentUsername = req.session().attribute("currentUserUsername");
+            User usuario = User.findFirst("name = ?", currentUsername);
+ 
+            if(usuario == null) {
+                res.redirect("/configuracion?errorMessage=Sesión inválida.");
+                return null;
+            }
+ 
+            String telefono = req.queryParams("telefono");
+            String direccion = req.queryParams("direccion");
+            if(telefono == null || telefono.isEmpty() || direccion == null || direccion.isEmpty()) {
+                res.redirect("/configuracion?errorMessage=Teléfono y dirección son obligatorios.");
+                return null;
+            }
+ 
+            String rol = usuario.getString("rol");
+            Integer dni = null;
+ 
+            if("DOCENTE".equals(rol)) {
+                Docente docente = Docente.findFirst("user_id = ?", usuario.getInteger("id"));
+                if(docente != null) {
+                    dni = docente.getInteger("dni");
+                }
+            } else if ("ALUMNO".equals(rol)) {
+                Estudiante estudiante = Estudiante.findFirst("user_id = ?", usuario.getInteger("id"));
+                if(estudiante != null) {
+                    dni = estudiante.getInteger("dni");
+                }
+            }
+ 
+            if(dni == null) {
+                res.redirect("/configuracion?errorMessage=No se encontró información personal asociada a tu cuenta.");
+                return null;
+            }
+ 
+            try {
+                Base.exec("UPDATE Persona SET telefono = ?, direccion = ? WHERE dni = ?", telefono, direccion, dni);
+                res.redirect("/configuracion?successMessage=Datos personales actualizados correctamente.");
+            } catch (Exception e) {
+                res.redirect("/configuracion?errorMessage=Error al actualizar los datos: " + e.getMessage());
+            }
+
+            return null;
+        });
 
         post("/docente/new", (req, res) -> {
 

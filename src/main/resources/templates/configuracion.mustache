@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Configuración</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+<div class="max-w-3xl mx-auto">
+
+    <!-- CABECERA -->
+    <div class="flex justify-between items-center mb-8">
+        <div>
+            <h1 class="text-3xl font-bold text-gray-800">Configuración</h1>
+            <p class="text-gray-500 mt-1">Administrá los datos de tu cuenta.</p>
+        </div>
+        <a href="/dashboard"
+           class="bg-gray-700 text-white px-5 py-2 rounded-lg hover:bg-gray-800 transition text-sm">
+            Volver al Dashboard
+        </a>
+    </div>
+
+    <!-- MENSAJES -->
+    {{#successMessage}}
+    <div class="bg-green-100 border border-green-300 text-green-800 p-4 rounded-lg mb-6">
+        ✓ <span class="msg">{{successMessage}}</span>
+    </div>
+    {{/successMessage}}
+
+    {{#errorMessage}}
+    <div class="bg-red-100 border border-red-300 text-red-800 p-4 rounded-lg mb-6">
+        ✗ <span class="msg">{{errorMessage}}</span>
+    </div>
+    {{/errorMessage}}
+
+    <script>
+        document.querySelectorAll('.msg').forEach(el => {
+            el.textContent = el.textContent.replace(/\+/g, ' ');
+        });
+    </script>
+
+    <!-- ===== CAMBIAR CONTRASEÑA (todos los roles) ===== -->
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+
+        <h2 class="text-lg font-bold text-gray-700 mb-1">🔒 Cambiar contraseña</h2>
+        <p class="text-sm text-gray-400 mb-5"></p>
+
+        <form method="POST" action="/configuracion/password" class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-600 mb-1">Contraseña actual</label>
+                <input type="password" name="password_actual" required
+                       class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"/>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Nueva contraseña</label>
+                    <input type="password" name="password_nueva" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Confirmar nueva contraseña</label>
+                    <input type="password" name="password_confirm" required
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"/>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="bg-gray-800 text-white px-5 py-2 rounded-lg hover:bg-gray-900 transition text-sm font-semibold">
+                    Actualizar contraseña
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- ===== DATOS PERSONALES (docente y alumno) ===== -->
+    {{#esDocente}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-700 mb-1">📋 Datos personales</h2>
+        <p class="text-sm text-gray-400 mb-5">Podés actualizar tu teléfono y dirección.</p>
+        <form method="POST" action="/configuracion/datos" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Teléfono</label>
+                    <input type="text" name="telefono" required value="{{persona.telefono}}"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Dirección</label>
+                    <input type="text" name="direccion" required value="{{persona.direccion}}"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"/>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 transition text-sm font-semibold">
+                    Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+    {{/esDocente}}
+
+    {{#esAlumno}}
+    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-6">
+        <h2 class="text-lg font-bold text-gray-700 mb-1">📋 Datos personales</h2>
+        <p class="text-sm text-gray-400 mb-5">Podés actualizar tu teléfono y dirección.</p>
+        <form method="POST" action="/configuracion/datos" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Teléfono</label>
+                    <input type="text" name="telefono" required value="{{persona.telefono}}"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Dirección</label>
+                    <input type="text" name="direccion" required value="{{persona.direccion}}"
+                           class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-400"/>
+                </div>
+            </div>
+            <div class="flex justify-end">
+                <button type="submit"
+                        class="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition text-sm font-semibold">
+                    Guardar cambios
+                </button>
+            </div>
+        </form>
+    </div>
+    {{/esAlumno}}
+
+    <!-- Admin: solo contraseña, sin email ni datos personales -->
+    {{#esAdmin}}
+    <div class="bg-gray-50 border border-gray-200 rounded-2xl p-4 text-sm text-gray-400 text-center">
+        El administrador no tiene datos personales ni email asociados al sistema.
+    </div>
+    {{/esAdmin}}
+
+</div>
+
+</body>
+</html>
