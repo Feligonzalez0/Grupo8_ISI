@@ -12,23 +12,9 @@ import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
-import com.is1.proyecto.models.AuditoriaAdmin;
-import com.is1.proyecto.models.Carrera;
-import com.is1.proyecto.models.Correlatividad;
-import com.is1.proyecto.models.Docente; // Para crear mapas de datos (modelos para las plantillas).
-import com.is1.proyecto.models.Estado;
-import com.is1.proyecto.models.Estudiante;
-import com.is1.proyecto.models.ExamenFinal;
-import com.is1.proyecto.models.InscripcionCarrera;
-import com.is1.proyecto.models.InscripcionExamen;
-import com.is1.proyecto.models.Materia;
-import com.is1.proyecto.models.MaterialEstudio;
-import com.is1.proyecto.models.PeriodoAcademico;
-import com.is1.proyecto.models.Persona;
-import com.is1.proyecto.models.PlanDeEstudios;
-import com.is1.proyecto.models.Situacion;
-import com.is1.proyecto.models.User;
-
+import com.is1.proyecto.filters.AuthFilter;
+import com.is1.proyecto.models.*;
+import com.is1.proyecto.services.*;
 import spark.ModelAndView; 
 import spark.Request;
 import static spark.Spark.after; // Clase Singleton para la configuración de la base de datos.
@@ -83,73 +69,18 @@ public class App {
         // datos.
         DBConfigSingleton dbConfig = DBConfigSingleton.getInstance();
         logger.info("Base de datos usada: {}", dbConfig.getDbUrl());
+        AuthFilter.registerAll(dbConfig);
 
         // --- Filtro 'before' para gestionar la conexión a la base de datos ---
         // Este filtro se ejecuta antes de cada solicitud HTTP.
-        before((req, res) -> {
-            try {
-                // Abre una conexión a la base de datos utilizando las credenciales del
-                // singleton.
-                if(!Base.hasConnection()) {
-                    Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
-                }   
-                System.out.println(req.url());
-
-            } catch (Exception e) {
-                // Si ocurre un error al abrir la conexión, se registra y se detiene la
-                // solicitud
-                // con un código de estado 500 (Internal Server Error) y un mensaje JSON.
-                System.err.println("Error al abrir conexión con ActiveJDBC: " + e.getMessage());
-                halt(500, "{\"error\": \"Error interno del servidor: Fallo al conectar a la base de datos.\"}"
-                        + e.getMessage());
-            }
-        });
         
-        before("/admin/*", (req, res) -> {
-            if (!isAdmin(req)) {
-                res.redirect("/dashboard?error=Debes ser administrador para acceder a esta pagina.");
-                halt();
-            }
-        });
         
-        before("/admin", (req, res) -> {
-            if (!isAdmin(req)) {
-                res.redirect("/dashboard?error=Debes ser administrador para acceder a esta pagina.");
-                halt();
-            }
-        });
+       
+        
+      
 
-        before("/dashboard", (req, res) -> {
-            Boolean loggedIn = req.session().attribute("loggedIn");
-            if (loggedIn == null || !loggedIn) {
-                res.redirect("/");
-                halt();
-            }
-        });
-
-        before("/profile", (req, res) -> {
-            Boolean loggedIn = req.session().attribute("loggedIn");
-            if (loggedIn == null || !loggedIn) {
-                res.redirect("/");
-                halt();
-            }
-        });
-
-        before("/configuracion", (req, res) -> {
-            Boolean loggedIn = req.session().attribute("loggedIn");
-            if(loggedIn == null || !loggedIn) {
-                res.redirect("/");
-                halt();
-            }
-        });
+        
  
-        before("/configuracion/*", (req, res) -> {
-            Boolean loggedIn = req.session().attribute("loggedIn");
-            if(loggedIn == null || !loggedIn) {
-                res.redirect("/");
-                halt();
-            }
-        });
         
         try {
             Base.open(
@@ -168,15 +99,7 @@ public class App {
 
         // --- Filtro 'after' para cerrar la conexión a la base de datos ---
         // Este filtro se ejecuta después de que cada solicitud HTTP ha sido procesada.
-        after((req, res) -> {
-            try {
-                // Cierra la conexión a la base de datos para liberar recursos.
-                Base.close();
-            } catch (Exception e) {
-                // Si ocurre un error al cerrar la conexión, se registra.
-                System.err.println("Error al cerrar conexión con ActiveJDBC: " + e.getMessage());
-            }
-        });
+
 
         // --- Rutas GET para renderizar formularios y páginas HTML ---
 
@@ -264,10 +187,7 @@ public class App {
         // GET: Ruta para cerrar la sesión del usuario.
         get("/logout", (req, res) -> {
             // Registrar auditoría de logout antes de invalidar la sesión
-            try {
-                String user = req.session().attribute("currentUserUsername");
-                if (user != null) registrarAuditoria(req, "LOGOUT", "Usuario: " + user);
-            } catch (Exception ignored) {}
+     
 
             // Invalida completamente la sesión del usuario.
             // Esto elimina todos los atributos guardados en la sesión y la marca como
@@ -397,16 +317,11 @@ public class App {
                 // Autenticación exitosa.
                 res.status(200); // OK.
 
-                // --- Gestión de Sesión ---
+                                // --- Gestión de Sesión ---
                 req.session(true).attribute("currentUserUsername", username); // Guarda el nombre de usuario en la sesión.
                 req.session().attribute("userId", ac.getId()); // Guarda el ID de la cuenta en la sesión (útil).
                 req.session().attribute("userRol", ac.getRol()); // Guarda el rol del usuario.
                 req.session().attribute("loggedIn", true); // Establece una bandera para indicar que el usuario está logueado.
-
-                System.out.println("DEBUG: Login exitoso para la cuenta: " + username);
-                System.out.println("DEBUG: ID de Sesion: " + req.session().id());
-
-                try { registrarAuditoria(req, "LOGIN", "Usuario: " + username); } catch (Exception ignored) {}
 
                 res.redirect("/dashboard"); 
                 return null;
@@ -611,7 +526,7 @@ public class App {
             try {
                 usuario.set("password", BCrypt.hashpw(passwordNueva, BCrypt.gensalt()));
                 usuario.saveIt();
-                try { registrarAuditoria(req, "CAMBIO_PASSWORD", "Usuario: " + currentUsername); } catch (Exception ignored) {}
+                AuditoriaService.registrarAuditoria(req, "CAMBIO_PASSWORD", "Usuario: " + currentUsername); 
                 res.redirect("/configuracion?successMessage=Contrasena+actualizada+correctamente.");
             } catch (Exception e) {
                 res.redirect("/configuracion?errorMessage=Error+al+guardar+la+contrasena.");
@@ -658,7 +573,7 @@ public class App {
  
             try {
                 Base.exec("UPDATE Persona SET telefono = ?, direccion = ? WHERE dni = ?", telefono, direccion, dni);
-                try { registrarAuditoria(req, "ACTUALIZAR_DATOS", "Usuario: " + currentUsername); } catch (Exception ignored) {}
+                AuditoriaService.registrarAuditoria(req, "ACTUALIZAR_DATOS", "Usuario: " + currentUsername); 
                 res.redirect("/configuracion?successMessage=Datos personales actualizados correctamente.");
             } catch (Exception e) {
                 res.redirect("/configuracion?errorMessage=Error al actualizar los datos: " + e.getMessage());
@@ -790,7 +705,7 @@ public class App {
                 usuarioExistente.set("rol", "DOCENTE");
                 usuarioExistente.saveIt();
                 persona.saveIt();
-                registrarAuditoria(req, "CREAR_DOCENTE", "DNI: " + dni + " - Usuario: " + username);
+                AuditoriaService.registrarAuditoria(req, "CREAR_DOCENTE", "DNI: " + dni + " - Usuario: " + username);
 
                 res.redirect("/admin/docentes/agregar?successMessage=Docente agregado correctamente.");
                 return null;
@@ -1025,7 +940,7 @@ public class App {
                 );
 
                 Base.commitTransaction();
-                registrarAuditoria(req, "EDITAR_DOCENTE", "Código profesor: " + codigoProfesor);
+                AuditoriaService.registrarAuditoria(req, "EDITAR_DOCENTE", "Código profesor: " + codigoProfesor);
                 res.redirect(
                         "/admin/docentes?successMessage=Docente actualizado correctamente"
                 );
@@ -1113,7 +1028,7 @@ public class App {
                     user.saveIt();
                 }
 
-                registrarAuditoria(req, "ELIMINAR_DOCENTE", "Código profesor: " + codigoProfesor);
+                AuditoriaService.registrarAuditoria(req, "ELIMINAR_DOCENTE", "Código profesor: " + codigoProfesor);
                 Base.commitTransaction();
                 logger.info("Registrar auditoría: ELIMINAR_DOCENTE codigoProfesor={}", codigoProfesor);
                 res.redirect("/admin/docentes?successMessage=Docente eliminado correctamente");
@@ -1320,7 +1235,7 @@ public class App {
                 usuarioExistente.set("rol", "ALUMNO");
                 usuarioExistente.saveIt();
                 persona.saveIt();
-                registrarAuditoria(req, "CREAR_ESTUDIANTE", "DNI: " + dni + " - Legajo: " + nro_legajo);
+                AuditoriaService.registrarAuditoria(req, "CREAR_ESTUDIANTE", "DNI: " + dni + " - Legajo: " + nro_legajo);
                 res.redirect("/admin/estudiantes/agregar?successMessage=Estudiante agregado correctamente.");
                 return null;
             } catch (Exception e) {
@@ -1514,7 +1429,7 @@ public class App {
     
             try {
                 estudiante.inscribirseMateria(codMateria);
-                try { registrarAuditoria(req, "INSCRIBIR_MATERIA", "dni:" + estudiante.getDni() + " codMateria:" + codMateria); } catch (Exception ignored) {}
+               AuditoriaService.registrarAuditoria(req, "INSCRIBIR_MATERIA", "dni:" + estudiante.getDni() + " codMateria:" + codMateria); 
                 res.redirect("/estudiante/inscripcion?successMessage=Te inscribiste correctamente a la materia.");
             } catch (Exception e) {
                 try {
@@ -1623,7 +1538,7 @@ public class App {
     
             try {
                 estudiante.inscribirseCarrera(codCarrera);
-                try { registrarAuditoria(req, "INSCRIBIR_CARRERA", "dni:" + estudiante.getDni() + " codCarrera:" + codCarrera); } catch (Exception ignored) {}
+                AuditoriaService.registrarAuditoria(req, "INSCRIBIR_CARRERA", "dni:" + estudiante.getDni() + " codCarrera:" + codCarrera); 
                 res.redirect("/estudiante/carrera?successMessage=Te inscribiste correctamente a " + carrera.getNombre() + ".");
             } catch (Exception e) {
                 try {
@@ -1811,7 +1726,7 @@ public class App {
                 );
 
                 Base.commitTransaction();
-                registrarAuditoria(req, "EDITAR_ESTUDIANTE", "Legajo: " + nro_legajo);
+                AuditoriaService.registrarAuditoria(req, "EDITAR_ESTUDIANTE", "Legajo: " + nro_legajo);
                 res.redirect(
                         "/admin/estudiantes?successMessage=Estudiante actualizado correctamente"
                 );
@@ -1899,7 +1814,7 @@ public class App {
                     user.saveIt();
                 }
 
-                registrarAuditoria(req, "ELIMINAR_ESTUDIANTE", "Legajo: " + nro_legajo);
+                AuditoriaService.registrarAuditoria(req, "ELIMINAR_ESTUDIANTE", "Legajo: " + nro_legajo);
                 Base.commitTransaction();
                 res.redirect("/admin/estudiantes?successMessage=Estudiante eliminado correctamente");
 
@@ -2093,7 +2008,7 @@ public class App {
                 plan.setCantidadMaterias(cantMat);
                 plan.set("cod_carrera", codCarrera); // <-- directo, sin pasar por setCod()
                 plan.saveIt();
-                registrarAuditoria(req, "CREAR_PLAN", "Año: " + año);
+                AuditoriaService.registrarAuditoria(req, "CREAR_PLAN", "Año: " + año);
                 res.redirect("/admin/planes?successMessage=Plan creado correctamente.");
                 return null;
 
@@ -2244,7 +2159,7 @@ public class App {
                 Base.exec("DELETE FROM Materia WHERE cod_plan = ?", codPlan);
                 Base.exec("DELETE FROM PlanDeEstudios WHERE cod_plan = ?", codPlan);
 
-                registrarAuditoria(req, "ELIMINAR_PLAN", "Código plan: " + codPlan);    
+                AuditoriaService.registrarAuditoria(req, "ELIMINAR_PLAN", "Código plan: " + codPlan);    
                 Base.commitTransaction();
                 res.redirect("/admin/planes?successMessage=Plan eliminado correctamente.");
                 return null;
@@ -2342,7 +2257,7 @@ public class App {
                 carrera.setNombre(nombre);
                 carrera.setDescripcion(descripcion);
                 carrera.saveIt();
-                registrarAuditoria(req, "CREAR_CARRERA", "Nombre: " + nombre);
+                AuditoriaService.registrarAuditoria(req, "CREAR_CARRERA", "Nombre: " + nombre);
                 res.redirect("/admin/carreras?successMessage=Carrera creada correctamente.");
                 return null;
 
@@ -2447,7 +2362,7 @@ public class App {
 
             try {
                 Base.exec("DELETE FROM Carrera WHERE cod_carrera = ?", codCarrera);
-                registrarAuditoria(req, "ELIMINAR_CARRERA", "Código: " + codCarrera);
+                AuditoriaService.registrarAuditoria(req, "ELIMINAR_CARRERA", "Código: " + codCarrera);
                 res.redirect("/admin/carreras?successMessage=Carrera eliminada correctamente.");
                 return null;
 
@@ -2570,7 +2485,7 @@ public class App {
             pa.setFecha(fecha);
             pa.setCargo(cargo);
             pa.saveIt();
-            try { registrarAuditoria(req, "ASIGNAR_MATERIA_DOCENTE", "codigoProfesor:" + codigoProfesor + " codMateria:" + codMateria); } catch (Exception ignored) {}
+            AuditoriaService.registrarAuditoria(req, "ASIGNAR_MATERIA_DOCENTE", "codigoProfesor:" + codigoProfesor + " codMateria:" + codMateria);
 
             res.redirect("/admin/docentes/" + codigoProfesor + "/materias?successMessage=Materia asignada correctamente.");
             return null;
@@ -2589,7 +2504,7 @@ public class App {
 
         try {
             Base.exec("DELETE FROM PeriodoAcademico WHERE id = ? AND codigo_profesor = ?", asignacionId, codigoProfesor);
-            try { registrarAuditoria(req, "QUITAR_MATERIA_DOCENTE", "codigoProfesor:" + codigoProfesor + " asignacionId:" + asignacionId); } catch (Exception ignored) {}
+            AuditoriaService.registrarAuditoria(req, "QUITAR_MATERIA_DOCENTE", "codigoProfesor:" + codigoProfesor + " asignacionId:" + asignacionId); 
             res.redirect("/admin/docentes/" + codigoProfesor + "/materias?successMessage=Materia quitada correctamente.");
             return null;
 
@@ -2670,7 +2585,7 @@ public class App {
             materia.setCodMateria(codMat);
             materia.setCodPlan(codPlan);
             materia.saveIt();
-            registrarAuditoria(req, "CREAR_MATERIA", "Nombre: " + nombre);
+            AuditoriaService.registrarAuditoria(req, "CREAR_MATERIA", "Nombre: " + nombre);
 
             res.redirect("/admin/materias?successMessage=Materia creada correctamente.");
             return null;
@@ -2780,7 +2695,7 @@ public class App {
             Base.openTransaction();
             Base.exec("DELETE FROM PeriodoAcademico WHERE cod_materia = ?", codMateria);
             Base.exec("DELETE FROM Materia WHERE cod_materia = ?", codMateria);
-            registrarAuditoria(req, "ELIMINAR_MATERIA", "Código materia: " + codMateria);
+            AuditoriaService.registrarAuditoria(req, "ELIMINAR_MATERIA", "Código materia: " + codMateria);
             Base.commitTransaction();
 
             res.redirect("/admin/materias?successMessage=Materia eliminada correctamente.");
@@ -2863,17 +2778,6 @@ public class App {
         return "DOCENTE".equals(rol);
     }
 
-    private static void registrarAuditoria(Request req, String accion, String detalle) {
-        try {
-            String usuario = req.session().attribute("currentUserUsername");
-            AuditoriaAdmin.registrar(usuario, accion, detalle);
-            logger.info("Auditoría registrada: usuario={}, accion={}, detalle={}", usuario, accion, detalle);
-        } catch (Exception e) {
-            System.err.println("ERROR AUDITORIA: " + e.getMessage());
-            e.printStackTrace();
-            logger.error("Error al registrar auditoría: {}", e.getMessage(), e);
-        }
-    }
 
     
 private static void registrarRutasDocente() {
@@ -2973,7 +2877,7 @@ private static void registrarRutasDocente() {
         examen.setCodMateria(codMateria);
         examen.setFecha(fecha);
         examen.saveIt();
-            try { registrarAuditoria(req, "CREAR_EXAMEN", "codigoProfesor:" + docente.getCodigoProfesor() + " codMateria:" + codMateria + " fecha:" + fecha); } catch (Exception ignored) {}
+            AuditoriaService.registrarAuditoria(req, "CREAR_EXAMEN", "codigoProfesor:" + docente.getCodigoProfesor() + " codMateria:" + codMateria + " fecha:" + fecha);
 
         res.redirect("/dashboard?message=Examen creado correctamente.");
     } catch (Exception e) {
@@ -3316,7 +3220,7 @@ private static void registrarRutasDocente() {
                 ? "Alumno aprobado correctamente."
                 : "Resultado libre registrado.";
  
-            try { registrarAuditoria(req, "CARGAR_NOTA", "idExamen:" + idExamen + " dni:" + dniEstudiante + " resultado:" + resultado); } catch (Exception ignored) {}
+             AuditoriaService.registrarAuditoria(req, "CARGAR_NOTA", "idExamen:" + idExamen + " dni:" + dniEstudiante + " resultado:" + resultado); 
             res.redirect("/docente/notas?id_examen=" + idExamen +
                 "&successMessage=" + java.net.URLEncoder.encode(msg, "UTF-8"));
  
@@ -3405,7 +3309,7 @@ private static void registrarRutasDocente() {
                 ? "Alumno marcado como Regular correctamente."
                 : "Alumno marcado como Libre correctamente.";
  
-            try { registrarAuditoria(req, "CAMBIAR_ESTADO_CURSADA", "dni:" + dniEstudiante + " codMateria:" + codMateria + " nuevoEstado:" + nuevoEstado); } catch (Exception ignored) {}
+            AuditoriaService.registrarAuditoria(req, "CAMBIAR_ESTADO_CURSADA", "dni:" + dniEstudiante + " codMateria:" + codMateria + " nuevoEstado:" + nuevoEstado); 
             res.redirect("/docente/alumnos?cod_materia=" + codMateria +
                 "&successMessage=" + java.net.URLEncoder.encode(msg, "UTF-8"));
  
@@ -3633,7 +3537,7 @@ private static void registrarRutasDocente() {
                 material.setFechaSubida(fecha);
                 material.saveIt();
 
-                try { registrarAuditoria(req, "SUBIR_MATERIAL", "codigoProfesor:" + docente.getCodigoProfesor() + " idMaterial:" + material.getId() + " nombre:" + nombre); } catch (Exception ignored) {}
+                AuditoriaService.registrarAuditoria(req, "SUBIR_MATERIAL", "codigoProfesor:" + docente.getCodigoProfesor() + " idMaterial:" + material.getId() + " nombre:" + nombre); 
                 res.redirect("/docente/material?successMessage=Material subido correctamente.");
 
             } catch (Exception e) {
@@ -3668,7 +3572,7 @@ private static void registrarRutasDocente() {
                 is.transferTo(os);
                 os.flush();
             }
-            try { registrarAuditoria(req, "DESCARGAR_MATERIAL", "idMaterial:" + material.getId() + " nombre:" + material.getNombreArchivo()); } catch (Exception ignored) {}
+            AuditoriaService.registrarAuditoria(req, "DESCARGAR_MATERIAL", "idMaterial:" + material.getId() + " nombre:" + material.getNombreArchivo());
 
             return null;
         });
@@ -3787,7 +3691,7 @@ private static void registrarRutasDocente() {
             inscripcion.setDniEstudiante(estudiante.getDni());
             inscripcion.setIdExamen(idExamen);
             inscripcion.saveIt();
-                try { registrarAuditoria(req, "INSCRIBIR_EXAMEN", "dni:" + estudiante.getDni() + " idExamen:" + idExamen); } catch (Exception ignored) {}
+            AuditoriaService.registrarAuditoria(req, "INSCRIBIR_EXAMEN", "dni:" + estudiante.getDni() + " idExamen:" + idExamen); 
 
             res.redirect("/estudiante/examenes?successMessage=Inscripcion realizada correctamente.");
         } catch (Exception e) {
