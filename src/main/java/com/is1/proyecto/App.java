@@ -1378,29 +1378,36 @@ public class App {
                 }
             }
 
-            List<PeriodoAcademico> periodos = PeriodoAcademico.findAll();
-            List<Integer> codMateriasConPeriodo = new ArrayList<>();
-            for(PeriodoAcademico p : periodos) {
-                if(!codMateriasConPeriodo.contains(p.getCodMateria())) {
-                    codMateriasConPeriodo.add(p.getCodMateria());
-                }
+            InscripcionCarrera inscripcionCarrera = InscripcionCarrera.findFirst("dni_estudiante = ?", estudiante.getDni());
+
+            if(inscripcionCarrera == null) {
+                res.redirect("/dashboard?error=No estás inscripto en ninguna carrera.");
+                return null;
             }
+
+            PlanDeEstudios plan = PlanDeEstudios.findFirst( "cod_carrera = ?", inscripcionCarrera.getCodCarrera());
+            if(plan == null) {
+                res.redirect("/dashboard?error=La carrera no tiene plan de estudios.");
+                return null;
+            }
+
+            List<Materia> materiasDelPlan = Materia.where("cod_plan = ?", plan.getCod());
 
             List<Map<String, Object>> materiasDisponibles = new ArrayList<>();
             List<Map<String, Object>> materiasInscriptas  = new ArrayList<>();
 
-            for(Integer codMat : codMateriasConPeriodo) {
-                Materia m = Materia.findFirst("cod_materia = ?", codMat);
-
-                if(m == null) continue;
+            for(Materia m : materiasDelPlan) {
+                Integer codMat = m.getCodMateria();
 
                 if(codMateriasInscriptas.contains(codMat)) {
                     Map<String, Object> mv = new HashMap<>();
+
                     mv.put("codMateria", codMat);
-                    mv.put("nombre",     m.getNombre());
+                    mv.put("nombre", m.getNombre());
 
                     Estado est = Estado.findFirst("dni_estudiante = ? AND cod_materia = ?", estudiante.getDni(), codMat);
                     mv.put("estado", est != null ? est.getString("estado") : "");
+
                     materiasInscriptas.add(mv);
 
                     continue;
@@ -1409,36 +1416,42 @@ public class App {
                 List<Correlatividad> correlativas = Correlatividad.where("cod_materia = ?", codMat);
                 boolean cumpleCorrelativas = true;
                 List<String> faltantes = new ArrayList<>();
-    
+
                 for(Correlatividad c : correlativas) {
-                    if(!codMateriasAprobadas.contains(c.getCodCorrelativa())) {
+                    if(!codMateriasAprobadas.contains(
+                            c.getCodCorrelativa())) {
+
                         cumpleCorrelativas = false;
+
                         Materia mc = Materia.findFirst("cod_materia = ?", c.getCodCorrelativa());
+
                         faltantes.add(mc != null ? mc.getNombre() : "Cód. " + c.getCodCorrelativa());
                     }
                 }
 
                 Map<String, Object> mv = new HashMap<>();
+
                 mv.put("codMateria", codMat);
                 mv.put("nombre", m.getNombre());
                 mv.put("descripcion", m.getDescripcion());
                 mv.put("puedeInscribirse", cumpleCorrelativas);
                 mv.put("tieneCorrelativas", !correlativas.isEmpty());
                 mv.put("correlativasFaltantes", String.join(", ", faltantes));
+
                 materiasDisponibles.add(mv);
             }
     
             Map<String, Object> model = new HashMap<>();
-            model.put("dni",             estudiante.getDni());
-            model.put("nroLegajo",       estudiante.getNroLegajo());
-            model.put("nombre",          persona != null ? persona.getNombre() : "");
-            model.put("apellido",        persona != null ? persona.getApellido() : "");
-            model.put("materias",        materiasDisponibles);
-            model.put("sinMaterias",     materiasDisponibles.isEmpty());
-            model.put("inscriptas",      materiasInscriptas);
+            model.put("dni", estudiante.getDni());
+            model.put("nroLegajo", estudiante.getNroLegajo());
+            model.put("nombre", persona != null ? persona.getNombre() : "");
+            model.put("apellido", persona != null ? persona.getApellido() : "");
+            model.put("materias", materiasDisponibles);
+            model.put("sinMaterias", materiasDisponibles.isEmpty());
+            model.put("inscriptas", materiasInscriptas);
             model.put("tieneInscriptas", !materiasInscriptas.isEmpty());
-            model.put("successMessage",  req.queryParams("successMessage"));
-            model.put("errorMessage",    req.queryParams("errorMessage"));
+            model.put("successMessage", req.queryParams("successMessage"));
+            model.put("errorMessage", req.queryParams("errorMessage"));
     
             return new ModelAndView(model, "estudiante/inscripcion.mustache");
 
@@ -1467,10 +1480,12 @@ public class App {
     
             int codMateria = Integer.parseInt(codMateriaStr);
     
-            PeriodoAcademico periodo = PeriodoAcademico.findFirst("cod_materia = ?", codMateria);
-            if(periodo == null) {
-                res.redirect("/estudiante/inscripcion?errorMessage=La materia no tiene un período académico activo.");
+            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
 
+            if(materia == null) {
+                res.redirect(
+                    "/estudiante/inscripcion?errorMessage=La materia no existe."
+                );
                 return null;
             }
 
