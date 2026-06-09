@@ -32,9 +32,6 @@ public class InscripcionExamen extends Model {
      * Verifica si el estudiante ya está inscripto a algún examen de esa materia.
      */
     public static boolean yaInscripto(Integer dniEstudiante, Integer codMateria) {
-        return InscripcionExamen.count(
-            "dni_estudiante = ? AND id_examen IN (SELECT id FROM ExamenFinal WHERE cod_materia = ?)",
-            dniEstudiante, codMateria
-        ) > 0;
+        return InscripcionExamen.count("dni_estudiante = ? AND id_examen IN (SELECT id FROM ExamenFinal WHERE cod_materia = ?)", dniEstudiante, codMateria) > 0;
     }
 }

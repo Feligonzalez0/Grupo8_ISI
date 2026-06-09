@@ -30,7 +30,6 @@ public class Materia extends Model {
         set("descripcion", descripcion);
     }
 
-    // CodigoPlan
     public Integer getCodPlan() {
         return getInteger("cod_plan");
     }

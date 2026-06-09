@@ -22,9 +22,23 @@ public class Admin extends Persona {
     }
 
     // Permisos especiales del admin
-    public boolean puedeGestionarUsuarios() { return true; }
-    public boolean puedeGestionarCarreras()  { return true; }
-    public boolean puedeGestionarDocentes()  { return true; }
-    public boolean puedeGestionarEstudiantes() { return true; }
-    public boolean puedeVerReportes()        { return true; }
+    public boolean puedeGestionarUsuarios() {
+        return true;
+    }
+
+    public boolean puedeGestionarCarreras()  {
+        return true;
+    }
+
+    public boolean puedeGestionarDocentes()  {
+        return true;
+    }
+
+    public boolean puedeGestionarEstudiantes() {
+        return true;
+    }
+    
+    public boolean puedeVerReportes() {
+        return true;
+    }
 }

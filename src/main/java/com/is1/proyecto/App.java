@@ -10,16 +10,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
-import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.config.*; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.controller.*;
 import com.is1.proyecto.filters.AuthFilter;
 import com.is1.proyecto.models.*;
-import com.is1.proyecto.routes.AdminRoutes;
-import com.is1.proyecto.routes.AuthRoutes;
-import com.is1.proyecto.routes.DashboardRoutes;
+import com.is1.proyecto.routes.*;
 import com.is1.proyecto.services.*;
-import spark.ModelAndView; 
-import spark.Request;
+import spark.ModelAndView;
 import static spark.Spark.before;
 import static spark.Spark.exception;
 import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
@@ -45,11 +42,7 @@ public class App {
 
     private static void ejecutarScheme() {
     try {
-        String sql = new String(
-            App.class.getClassLoader()
-                .getResourceAsStream("scheme.sql")
-                .readAllBytes()
-        );
+        String sql = new String(App.class.getClassLoader().getResourceAsStream("scheme.sql").readAllBytes());
         Base.exec(sql);
         System.out.println("Schema ejecutado correctamente.");
 
@@ -64,30 +57,23 @@ public class App {
      * Aquí se configuran todas las rutas y filtros de Spark.
      */
     public static void main(String[] args) {
-        port(8080); // Configura el puerto en el que la aplicación Spark escuchará las peticiones
-                    // (por defecto es 8080).
+        port(8080); // Configura el puerto en el que la aplicación Spark escuchará las peticiones (por defecto es 8080).
 
-        // Obtener la instancia única del singleton de configuración de la base de
-        // datos.
+        // Obtener la instancia única del singleton de configuración de la base de datos.
         DBConfigSingleton dbConfig = DBConfigSingleton.getInstance();
-        logger.info("Base de datos usada: {}", dbConfig.getDbUrl());
         AuthFilter.registerAll(dbConfig);
+        logger.info("Base de datos usada: {}", dbConfig.getDbUrl());
 
         try {
-            Base.open(
-                dbConfig.getDriver(),
-                dbConfig.getDbUrl(),
-                dbConfig.getUser(),
-                dbConfig.getPass()
-            );
+            Base.open(dbConfig.getDriver(), dbConfig.getDbUrl(), dbConfig.getUser(), dbConfig.getPass());
 
             ejecutarScheme();
-            Base.close();
 
+            Base.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
-        
+
         // --- Rutas de autenticación ---
         MustacheTemplateEngine engine = new MustacheTemplateEngine();
         AuthController authController = new AuthController(new AuthService());
@@ -97,11 +83,20 @@ public class App {
         DashboardController dashboardController = new DashboardController(new AuthService());
         DashboardRoutes.register(dashboardController, engine);
 
+         // --- Rutas Estudiante ---
+        EstudianteController estudianteController = new EstudianteController();
+        EstudianteRoutes.register(estudianteController, engine);
+
         // --- Rutas Admin ---
         AdminController adminController = new AdminController(new DocenteService());
         AdminRoutes.register(adminController, engine);
 
         // --- Rutas POST para manejar envíos de formularios y APIs ---
+
+
+
+
+
 
         // POST: Endpoint para añadir usuarios (API que devuelve JSON, no HTML).
         // Advertencia: Esta ruta tiene un propósito diferente a las de formulario HTML.
@@ -247,35 +242,6 @@ public class App {
             }
         });
 
-        // ===== DASHBOARD ESTUDIANTE =====
-        get("/estudiante/dashboard", (req, res) -> {
-            Integer userId = req.session().attribute("userId");
-            String userRol = req.session().attribute("userRol");
- 
-            if (userId == null || !"ALUMNO".equals(userRol)) {
-                res.redirect("/dashboard?error=Acceso no autorizado.");
-                return null;
-            }
- 
-            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-            if (estudiante == null) {
-                res.redirect("/dashboard?error=No se encontro el perfil de estudiante.");
-                return null;
-            }
- 
-            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
- 
-            Map<String, Object> model = new HashMap<>();
-            model.put("nombre",    persona != null ? persona.getNombre()   : "");
-            model.put("apellido",  persona != null ? persona.getApellido() : "");
-            model.put("nroLegajo", estudiante.getNroLegajo());
- 
-            String error = req.queryParams("error");
-            if (error != null) model.put("errorMessage", error);
- 
-            return new ModelAndView(model, "estudiante/estudianteDashboard.mustache");
-        }, new MustacheTemplateEngine());
-        
         //! ESTUDIANTES
         post("/estudiante/new", (req, res) -> {
 
@@ -426,304 +392,6 @@ public class App {
                 res.redirect("/admin/estudiantes/agregar?errorMessage=Error al agregar estudiante: " + msg);
                 return null;
             }
-        });
-
-        get("/estudiante/inscripcion", (req, res) -> {
-            Integer userId = req.session().attribute("userId");
-            String userRol = req.session().attribute("userRol");
-
-            if(userId == null || !"ALUMNO".equals(userRol)) {
-                res.redirect("/dashboard?error=Acceso no autorizado.");
-                return null;
-            }
-
-            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-            if(estudiante == null) {
-                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-                return null;
-            }
-
-            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
-
-            List<Estado> estadosActuales = Estado.where("dni_estudiante = ?", estudiante.getDni());
-            List<Integer> codMateriasInscriptas = new ArrayList<>();
-            for(Estado e : estadosActuales) {
-                codMateriasInscriptas.add(e.getCodMateria());
-            }
-
-            List<Integer> codMateriasAprobadas = new ArrayList<>();
-            for(Estado e : estadosActuales) {
-                if("APROBADO".equals(e.getString("estado"))) {
-                    codMateriasAprobadas.add(e.getCodMateria());
-                }
-            }
-
-            InscripcionCarrera inscripcionCarrera = InscripcionCarrera.findFirst("dni_estudiante = ?", estudiante.getDni());
-
-            if(inscripcionCarrera == null) {
-                res.redirect("/dashboard?error=No estás inscripto en ninguna carrera.");
-                return null;
-            }
-
-            PlanDeEstudios plan = PlanDeEstudios.findFirst( "cod_carrera = ?", inscripcionCarrera.getCodCarrera());
-            if(plan == null) {
-                res.redirect("/dashboard?error=La carrera no tiene plan de estudios.");
-                return null;
-            }
-
-            List<Materia> materiasDelPlan = Materia.where("cod_plan = ?", plan.getCod());
-
-            List<Map<String, Object>> materiasDisponibles = new ArrayList<>();
-            List<Map<String, Object>> materiasInscriptas  = new ArrayList<>();
-
-            for(Materia m : materiasDelPlan) {
-                Integer codMat = m.getCodMateria();
-
-                if(codMateriasInscriptas.contains(codMat)) {
-                    Map<String, Object> mv = new HashMap<>();
-
-                    mv.put("codMateria", codMat);
-                    mv.put("nombre", m.getNombre());
-
-                    Estado est = Estado.findFirst("dni_estudiante = ? AND cod_materia = ?", estudiante.getDni(), codMat);
-                    mv.put("estado", est != null ? est.getString("estado") : "");
-
-                    materiasInscriptas.add(mv);
-
-                    continue;
-                }
-
-                List<Correlatividad> correlativas = Correlatividad.where("cod_materia = ?", codMat);
-                boolean cumpleCorrelativas = true;
-                List<String> faltantes = new ArrayList<>();
-
-                for(Correlatividad c : correlativas) {
-                    if(!codMateriasAprobadas.contains(
-                            c.getCodCorrelativa())) {
-
-                        cumpleCorrelativas = false;
-
-                        Materia mc = Materia.findFirst("cod_materia = ?", c.getCodCorrelativa());
-
-                        faltantes.add(mc != null ? mc.getNombre() : "Cód. " + c.getCodCorrelativa());
-                    }
-                }
-
-                Map<String, Object> mv = new HashMap<>();
-
-                mv.put("codMateria", codMat);
-                mv.put("nombre", m.getNombre());
-                mv.put("descripcion", m.getDescripcion());
-                mv.put("puedeInscribirse", cumpleCorrelativas);
-                mv.put("tieneCorrelativas", !correlativas.isEmpty());
-                mv.put("correlativasFaltantes", String.join(", ", faltantes));
-
-                materiasDisponibles.add(mv);
-            }
-    
-            Map<String, Object> model = new HashMap<>();
-            model.put("dni", estudiante.getDni());
-            model.put("nroLegajo", estudiante.getNroLegajo());
-            model.put("nombre", persona != null ? persona.getNombre() : "");
-            model.put("apellido", persona != null ? persona.getApellido() : "");
-            model.put("materias", materiasDisponibles);
-            model.put("sinMaterias", materiasDisponibles.isEmpty());
-            model.put("inscriptas", materiasInscriptas);
-            model.put("tieneInscriptas", !materiasInscriptas.isEmpty());
-            model.put("successMessage", req.queryParams("successMessage"));
-            model.put("errorMessage", req.queryParams("errorMessage"));
-    
-            return new ModelAndView(model, "estudiante/inscripcion.mustache");
-
-        }, new MustacheTemplateEngine());
-    
-        post("/estudiante/inscripcion", (req, res) -> {
-            Integer userId = req.session().attribute("userId");
-            String userRol = req.session().attribute("userRol");
-    
-            if(userId == null || !"ALUMNO".equals(userRol)) {
-                res.redirect("/dashboard?error=Acceso no autorizado.");
-                return null;
-            }
-    
-            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-            if(estudiante == null) {
-                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-                return null;
-            }
-    
-            String codMateriaStr = req.queryParams("cod_materia");
-            if(codMateriaStr == null || codMateriaStr.isEmpty()) {
-                res.redirect("/estudiante/inscripcion?errorMessage=Debe seleccionar una materia.");
-                return null;
-            }
-    
-            int codMateria = Integer.parseInt(codMateriaStr);
-    
-            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
-
-            if(materia == null) {
-                res.redirect(
-                    "/estudiante/inscripcion?errorMessage=La materia no existe."
-                );
-                return null;
-            }
-
-            Estado yaInscripto = Estado.findFirst("dni_estudiante = ? AND cod_materia = ?", estudiante.getDni(), codMateria);
-            if (yaInscripto != null) {
-                res.redirect("/estudiante/inscripcion?errorMessage=Ya estás inscripto en esa materia.");
-
-                return null;
-            }
-
-            List<Correlatividad> correlativas = Correlatividad.where("cod_materia = ?", codMateria);
-            if(!correlativas.isEmpty()) {
-                List<Estado> aprobadas = Estado.where("dni_estudiante = ? AND estado = 'APROBADO'", estudiante.getDni());
-                List<Integer> codAprobadas = new ArrayList<>();
-                for(Estado e : aprobadas) codAprobadas.add(e.getCodMateria());
-    
-                List<String> faltantes = new ArrayList<>();
-                for(Correlatividad c : correlativas) {
-                    if(!codAprobadas.contains(c.getCodCorrelativa())) {
-                        Materia mc = Materia.findFirst("cod_materia = ?", c.getCodCorrelativa());
-                        faltantes.add(mc != null ? mc.getNombre() : "Cód. " + c.getCodCorrelativa());
-                    }
-                }
-
-                if(!faltantes.isEmpty()) {
-                    String msg = "No cumplís las correlatividades. Te falta aprobar: " + String.join(", ", faltantes);
-
-                    try {
-                        res.redirect("/estudiante/inscripcion?errorMessage=" + java.net.URLEncoder.encode(msg, "UTF-8"));
-                    } catch (Exception ex) {
-                        res.redirect("/estudiante/inscripcion?errorMessage=Correlativas incompletas.");
-                    }
-                    return null;
-                }
-            }
-    
-            try {
-                estudiante.inscribirseMateria(codMateria);
-               AuditoriaService.registrarAuditoria(req, "INSCRIBIR_MATERIA", "dni:" + estudiante.getDni() + " codMateria:" + codMateria); 
-                res.redirect("/estudiante/inscripcion?successMessage=Te inscribiste correctamente a la materia.");
-            } catch (Exception e) {
-                try {
-                    res.redirect("/estudiante/inscripcion?errorMessage=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
-                } catch (Exception ex) {
-                    res.redirect("/estudiante/inscripcion?errorMessage=Error al inscribirse.");
-                }
-            }
-
-            return null;
-        });
-        
-        get("/estudiante/carrera", (req, res) -> {
-
-            Integer userId = req.session().attribute("userId");
-            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-    
-            if(estudiante == null) {
-                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-                return null;
-            }
-    
-            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
-    
-            Map<String, Object> model = new HashMap<>();
-            model.put("nombre",    persona != null ? persona.getNombre()   : "");
-            model.put("apellido",  persona != null ? persona.getApellido() : "");
-            model.put("nroLegajo", estudiante.getNroLegajo());
-
-            InscripcionCarrera inscripcion = InscripcionCarrera.findFirst("dni_estudiante = ?", estudiante.getDni());
-    
-            if(inscripcion != null) {
-                Carrera carreraActual = Carrera.findFirst("cod_carrera = ?", inscripcion.getCodCarrera());
-                model.put("yaInscripto",       true);
-                model.put("carreraActual",     carreraActual != null ? carreraActual.getNombre()      : "Sin nombre");
-                model.put("descripcionActual", carreraActual != null ? carreraActual.getDescripcion() : "");
-                model.put("situacionCarrera",  inscripcion.getSituacion() != null ? inscripcion.getSituacion().name() : "");
-                model.put("esIngresante",      Situacion.INGRESANTE.equals(inscripcion.getSituacion()));
-                model.put("esAvanzado",        Situacion.AVANZADO.equals(inscripcion.getSituacion()));
-            } else {
-                List<Carrera> carrerasDB = Carrera.findAll();
-                List<Map<String, Object>> carreras = new ArrayList<>();
-
-                for(Carrera c : carrerasDB) {
-                    Map<String, Object> cv = new HashMap<>();
-                    cv.put("codCarrera",  c.getCodigo());
-                    cv.put("nombre",      c.getNombre());
-                    cv.put("descripcion", c.getDescripcion() != null ? c.getDescripcion() : "");
-                    carreras.add(cv);
-                }
-
-                model.put("yaInscripto", false);
-                model.put("carreras",    carreras);
-                model.put("sinCarreras", carreras.isEmpty());
-            }
-    
-            String success = req.queryParams("successMessage");
-            String error   = req.queryParams("errorMessage");
-
-            if(success != null) {
-                model.put("successMessage", success);
-            }
-            if(error   != null) {
-            model.put("errorMessage",   error);
-            }
-    
-            return new ModelAndView(model, "estudiante/inscripcionCarrera.mustache");
-    
-        }, new MustacheTemplateEngine());
-
-        post("/estudiante/carrera/inscribir", (req, res) -> {
-    
-            Integer userId = req.session().attribute("userId");
-            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-    
-            if(estudiante == null) {
-                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-                return null;
-            }
-
-            InscripcionCarrera inscripcionExistente = InscripcionCarrera.findFirst("dni_estudiante = ?", estudiante.getDni());
-            if(inscripcionExistente != null) {
-                res.redirect("/estudiante/carrera?errorMessage=Ya estás inscripto en una carrera.");
-                return null;
-            }
-    
-            String codCarreraStr = req.queryParams("cod_carrera");
-            if (codCarreraStr == null || codCarreraStr.isEmpty()) {
-                res.redirect("/estudiante/carrera?errorMessage=Debe seleccionar una carrera.");
-                return null;
-            }
-    
-            Integer codCarrera;
-            try {
-                codCarrera = Integer.parseInt(codCarreraStr);
-            } catch (NumberFormatException e) {
-                res.redirect("/estudiante/carrera?errorMessage=Carrera inválida.");
-                return null;
-            }
-    
-            Carrera carrera = Carrera.findFirst("cod_carrera = ?", codCarrera);
-            if(carrera == null) {
-                res.redirect("/estudiante/carrera?errorMessage=La carrera seleccionada no existe.");
-                return null;
-            }
-    
-            try {
-                estudiante.inscribirseCarrera(codCarrera);
-                AuditoriaService.registrarAuditoria(req, "INSCRIBIR_CARRERA", "dni:" + estudiante.getDni() + " codCarrera:" + codCarrera); 
-                res.redirect("/estudiante/carrera?successMessage=Te inscribiste correctamente a " + carrera.getNombre() + ".");
-            } catch (Exception e) {
-                try {
-                    res.redirect("/estudiante/carrera?errorMessage=" + java.net.URLEncoder.encode(e.getMessage(), "UTF-8"));
-                } catch (Exception ex) {
-                    res.redirect("/estudiante/carrera?errorMessage=Error al inscribirse a la carrera.");
-                }
-            }
-
-            return null;
         });
 
         // Con esto podemos hacer localhost:puerto/admin/estudiantes/agregar
@@ -1817,11 +1485,6 @@ public class App {
         return new ModelAndView(model, "admin/adminAuditoria.mustache");
     }, new MustacheTemplateEngine());
      registrarRutasDocente();
-   
-     registrarRutasEstudiante();
-     
-     
-
     } // Fin del método main
 
     // HELPERS
@@ -1829,18 +1492,6 @@ public class App {
     String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
     return email != null && email.matches(regex);
     }
-    
-    private static boolean isAdmin(Request req) {
-        String rol = req.session().attribute("userRol");
-        return "ADMINISTRADOR".equals(rol);
-    }
-    
-    private static boolean isDocente(Request req) {
-        String rol = req.session().attribute("userRol");
-        return "DOCENTE".equals(rol);
-    }
-
-
     
 private static void registrarRutasDocente() {
  
@@ -2296,11 +1947,6 @@ private static void registrarRutasDocente() {
         return null;
     });
 
-
-
-
-    //!
-    //!
     //!
     post("/docente/alumnos/estadoCursada", (req, res) -> {
  
@@ -2384,86 +2030,6 @@ private static void registrarRutasDocente() {
         return null;
     });
     //!
-    //!
-    //!
-    get("/estudiante/avance", (req, res) -> {
-            Integer userId = req.session().attribute("userId");
-            Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-
-            if (estudiante == null) {
-                res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-                return null;
-            }
-
-            Persona persona = Persona.findFirst("dni = ?", estudiante.getDni());
-
-            // Todos los estados del estudiante
-            List<Estado> estados = Estado.where("dni_estudiante = ?", estudiante.getDni());
-
-            List<Map<String, Object>> aprobadas  = new ArrayList<>();
-            List<Map<String, Object>> pendientes = new ArrayList<>();
-
-            for (Estado e : estados) {
-                Materia materia = Materia.findFirst("cod_materia = ?", e.getCodMateria());
-                if (materia == null) continue;
-
-                Map<String, Object> mv = new HashMap<>();
-                mv.put("nombre",     materia.getNombre());
-                mv.put("codMateria", materia.getCodMateria());
-                mv.put("estado",     e.getString("estado"));
-
-                String estadoClass;
-                if ("APROBADO".equals(e.getString("estado"))) {
-                    estadoClass = "bg-green-100 text-green-700";
-                } else if ("REGULAR".equals(e.getString("estado"))) {
-                    estadoClass = "bg-blue-100 text-blue-700";
-                } else if ("LIBRE".equals(e.getString("estado"))) {
-                    estadoClass = "bg-red-100 text-red-700";
-                } else {
-                    estadoClass = "bg-yellow-100 text-yellow-700"; // INSCRIPTO
-                }
-                mv.put("estadoClass", estadoClass);
-
-                if ("APROBADO".equals(e.getString("estado"))) {
-                    aprobadas.add(mv);
-                } else {
-                    pendientes.add(mv);
-                }
-            }
-
-            // Buscar el plan del estudiante para calcular porcentaje
-            // El plan se obtiene a través de la materia → cod_plan → PlanDeEstudios
-            int totalMaterias = 0;
-            if (!estados.isEmpty()) {
-                Estado primerEstado = estados.get(0);
-                Materia primerMateria = Materia.findFirst("cod_materia = ?", primerEstado.getCodMateria());
-                if (primerMateria != null) {
-                    PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", primerMateria.getCodPlan());
-                    if (plan != null) {
-                        totalMaterias = plan.getCantidadMaterias();
-                    }
-                }
-            }
-
-            int cantAprobadas = aprobadas.size();
-            double porcentaje = totalMaterias > 0
-                ? Math.round((cantAprobadas * 100.0 / totalMaterias) * 10.0) / 10.0
-                : 0.0;
-
-            Map<String, Object> model = new HashMap<>();
-            model.put("nombre",        persona != null ? persona.getNombre() : "");
-            model.put("apellido",      persona != null ? persona.getApellido() : "");
-            model.put("nroLegajo",     estudiante.getNroLegajo());
-            model.put("aprobadas",     aprobadas);
-            model.put("pendientes",    pendientes);
-            model.put("cantAprobadas", cantAprobadas);
-            model.put("totalMaterias", totalMaterias);
-            model.put("porcentaje",    porcentaje);
-            model.put("sinEstados",    estados.isEmpty());
-
-            return new ModelAndView(model, "estudiante/avanceAcademico.mustache");
-
-        }, new MustacheTemplateEngine());
 
         // Configurar carpeta de uploads
         String uploadDir = "materialEstudio";
@@ -2640,164 +2206,4 @@ private static void registrarRutasDocente() {
         });
 
     }
-
-
-
-
-
-    private static void registrarRutasEstudiante() {
-
-    before("/estudiante/*", (req, res) -> {
-        Boolean loggedIn = req.session().attribute("loggedIn");
-        if (loggedIn == null || !loggedIn) {
-            res.redirect("/");
-            halt();
-        }
-        String rol = req.session().attribute("userRol");
-       if (!"ALUMNO".equals(rol) && !"ADMINISTRADOR".equals(rol)) {
-            res.redirect("/dashboard");
-            halt();
-        }
-    });
-
-    // GET: ver exámenes disponibles para inscribirse
-    get("/estudiante/examenes", (req, res) -> {
-
-        Integer userId = req.session().attribute("userId");
-        Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-
-        if (estudiante == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-            return null;
-        }
-
-        // Materias en estado REGULAR del estudiante
-        List<Estado> regulares = Estado.where(
-            "dni_estudiante = ? AND estado = ?",
-            estudiante.getDni(), "REGULAR"
-        );
-
-        List<Map<String, Object>> examenesView = new ArrayList<>();
-
-        for (Estado e : regulares) {
-            Integer codMateria = e.getCodMateria();
-
-            // Verificar si ya está inscripto a un examen de esta materia
-            boolean yaInscripto = InscripcionExamen.yaInscripto(estudiante.getDni(), codMateria);
-
-            // Exámenes disponibles para esa materia
-            List<ExamenFinal> examenes = ExamenFinal.where("cod_materia = ?", codMateria);
-
-            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
-
-            for (ExamenFinal ex : examenes) {
-                Map<String, Object> ev = new HashMap<>();
-                ev.put("idExamen", ex.getId());
-                ev.put("nombreMateria", materia != null ? materia.getNombre() : "Sin nombre");
-                ev.put("fecha", ex.getFecha());
-                ev.put("yaInscripto", yaInscripto);
-                examenesView.add(ev);
-            }
-        }
-
-        Map<String, Object> model = new HashMap<>();
-        model.put("examenes", examenesView);
-        model.put("sinExamenes", examenesView.isEmpty());
-
-        String success = req.queryParams("successMessage");
-        String error   = req.queryParams("errorMessage");
-        if (success != null) model.put("successMessage", success);
-        if (error   != null) model.put("errorMessage", error);
-
-        return new ModelAndView(model, "estudiante/examenesDisponibles.mustache");
-
-    }, new MustacheTemplateEngine());
-
-    // POST: inscribirse a un examen
-    post("/estudiante/examenes/:id/inscribir", (req, res) -> {
-
-        Integer userId = req.session().attribute("userId");
-        Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-
-        if (estudiante == null) {
-            res.redirect("/dashboard");
-            return null;
-        }
-
-        Integer idExamen = Integer.parseInt(req.params(":id"));
-        ExamenFinal examen = ExamenFinal.findById(idExamen);
-
-        if (examen == null) {
-            res.redirect("/estudiante/examenes?errorMessage=Examen no encontrado.");
-            return null;
-        }
-
-        // Verificar que tiene esa materia en REGULAR
-        Estado estado = Estado.findFirst(
-            "dni_estudiante = ? AND cod_materia = ? AND estado = ?",
-            estudiante.getDni(), examen.getCodMateria(), "REGULAR"
-        );
-        if (estado == null) {
-            res.redirect("/estudiante/examenes?errorMessage=No tenes esa materia en estado Regular.");
-            return null;
-        }
-
-        // Verificar que no está ya inscripto a otro examen de esa materia
-        if (InscripcionExamen.yaInscripto(estudiante.getDni(), examen.getCodMateria())) {
-            res.redirect("/estudiante/examenes?errorMessage=Ya estas inscripto a un examen de esa materia.");
-            return null;
-        }
-
-        try {
-            InscripcionExamen inscripcion = new InscripcionExamen();
-            inscripcion.setDniEstudiante(estudiante.getDni());
-            inscripcion.setIdExamen(idExamen);
-            inscripcion.saveIt();
-            AuditoriaService.registrarAuditoria(req, "INSCRIBIR_EXAMEN", "dni:" + estudiante.getDni() + " idExamen:" + idExamen); 
-
-            res.redirect("/estudiante/examenes?successMessage=Inscripcion realizada correctamente.");
-        } catch (Exception e) {
-            res.redirect("/estudiante/examenes?errorMessage=Error al inscribirse: " + e.getMessage());
-        }
-        return null;
-    });
-
-    // GET: ver materiales disponibles para el estudiante
-    get("/estudiante/material", (req, res) -> {
-        Integer userId = req.session().attribute("userId");
-        Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
-
-        if (estudiante == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de estudiante.");
-            return null;
-        }
-
-        // Materias en las que está inscripto
-        List<Estado> estados = Estado.where("dni_estudiante = ?", estudiante.getDni());
-
-        List<Map<String, Object>> materiales = new ArrayList<>();
-        for (Estado e : estados) {
-            List<MaterialEstudio> matsDB = MaterialEstudio.where("cod_materia = ?", e.getCodMateria());
-            Materia materia = Materia.findFirst("cod_materia = ?", e.getCodMateria());
-
-            for (MaterialEstudio mat : matsDB) {
-                Map<String, Object> mv = new HashMap<>();
-                mv.put("id",            mat.getId());
-                mv.put("nombre",        mat.getNombre());
-                mv.put("descripcion",   mat.getDescripcion());
-                mv.put("nombreArchivo", mat.getNombreArchivo());
-                mv.put("fechaSubida",   mat.getFechaSubida());
-                mv.put("nombreMateria", materia != null ? materia.getNombre() : "Sin materia");
-                materiales.add(mv);
-            }
-        }
-
-        Map<String, Object> model = new HashMap<>();
-        model.put("materiales",    materiales);
-        model.put("sinMateriales", materiales.isEmpty());
-
-        return new ModelAndView(model, "estudiante/materialEstudio.mustache");
-
-    }, new MustacheTemplateEngine());
-}
 } // Fin de la clase App
