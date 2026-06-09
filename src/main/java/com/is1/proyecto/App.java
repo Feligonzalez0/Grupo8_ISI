@@ -16,13 +16,13 @@ import com.is1.proyecto.models.*;
 import com.is1.proyecto.routes.*;
 import com.is1.proyecto.services.*;
 import spark.ModelAndView;
-import static spark.Spark.exception;
-import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
-import static spark.Spark.internalServerError;
+import spark.template.mustache.MustacheTemplateEngine;
 import static spark.Spark.notFound;
+import static spark.Spark.internalServerError;
+import static spark.Spark.exception;
 import static spark.Spark.port;
 import static spark.Spark.post;
-import spark.template.mustache.MustacheTemplateEngine;
+import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
 
 // mvn clean compile activejdbc-instrumentation:instrument exec:java "-Dexec.mainClass=com.is1.proyecto.App"
 
@@ -89,6 +89,37 @@ public class App {
         // --- Rutas Admin ---
         AdminController adminController = new AdminController(new DocenteService());
         AdminRoutes.register(adminController, engine);
+
+        // --- Manejo de errores ---
+        // Ir a una ruta que no existe.
+        notFound((req, res) -> {
+            res.type("text/html");
+            logger.warn("404 - Ruta no encontrada: {}", req.url());
+
+            return "<h1>404 - Pagina no encontrada</h1><p>La ruta <b>" + req.url() + "</b> no existe.</p><a href='/dashboard'>Volver al inicio</a>";
+        });
+
+        // Error interno en el servidor.
+        internalServerError((req, res) -> {
+            res.type("text/html");
+            logger.error("500 - Error interno en: {}", req.url());
+
+            return "<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/dashboard'>Volver al inicio</a>";
+        });
+
+        // Excepciones no capturadas.
+        exception(Exception.class, (e, req, res) -> {
+            logger.error("Excepción no manejada en {}: {}", req.url(), e.getMessage(), e);
+
+            res.status(500);
+            res.type("text/html");
+            res.body("<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/dashboard'>Volver al inicio</a>");
+        });
+
+        // Acceso no autorizado.
+        exception(spark.HaltException.class, (e, req, res) -> {
+            logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
+        });
 
         // --- Rutas POST para manejar envíos de formularios y APIs ---
 
@@ -1211,35 +1242,6 @@ public class App {
                 res.redirect("/admin/carreras?errorMessage=Error al eliminar la carrera.");
                 return null;
             }
-        });
-        
-        // MANEJO DE ERRORES
-        // 404 (ejemplo: ir a una ruta que no existe)
-        
-        notFound((req, res) -> {
-            res.type("text/html");
-            logger.warn("404 - Ruta no encontrada: {}", req.url());
-            return "<h1>404 - Pagina no encontrada</h1><p>La ruta <b>" + req.url() + "</b> no existe.</p><a href='/dashboard'>Volver al inicio</a>";
-        });
-
-        // 500
-        internalServerError((req, res) -> {
-            res.type("text/html");
-            logger.error("500 - Error interno en: {}", req.url());
-            return "<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/dashboard'>Volver al inicio</a>";
-        });
-
-        // Excepciones no capturadas
-        exception(Exception.class, (e, req, res) -> {
-            logger.error("Excepción no manejada en {}: {}", req.url(), e.getMessage(), e);
-            res.status(500);
-            res.type("text/html");
-            res.body("<h1>500 - Error interno del servidor</h1><p>Ocurrió un error inesperado. Intente más tarde.</p><a href='/dashboard'>Volver al inicio</a>");
-        });
-
-        // Acceso no autorizado (ejemplo: intenta entrar a admin sin estar logueado)
-        exception(spark.HaltException.class, (e, req, res) -> {
-            logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
         });
 
         //! MATERIAS 

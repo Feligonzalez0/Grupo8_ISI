@@ -71,7 +71,7 @@ public class DocenteController {
     }
 
     // POST /docente/examenes/crear
-    public ModelAndView handleCrearExamen(Request req, Response res) {
+    public Object handleCrearExamen(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Docente docente = Docente.findFirst("user_id = ?", userId);
         if(docente == null) {
@@ -228,7 +228,7 @@ public class DocenteController {
     }
 
     // POST /docente/alumnos/estadoCursada  — marcar alumno como regular o libre
-    public ModelAndView handleEstadoCursada(Request req, Response res) {
+    public Object handleEstadoCursada(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Docente docente = Docente.findFirst("user_id = ?", userId);
         if(docente == null) {
@@ -388,7 +388,7 @@ public class DocenteController {
     }
 
     // POST /docente/notas/cargar  — guardar resultado de un alumno en examen final
-    public ModelAndView handleCargarNota(Request req, Response res) {
+    public Object handleCargarNota(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Docente docente = Docente.findFirst("user_id = ?", userId);
         if(docente == null) {
@@ -506,7 +506,7 @@ public class DocenteController {
     }
 
     // POST /docente/material/subir  — subir archivo de material de estudio
-    public ModelAndView handleSubirMaterial(Request req, Response res) {
+    public Object handleSubirMaterial(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Docente docente = Docente.findFirst("user_id = ?", userId);
         if(docente == null) {
@@ -575,7 +575,7 @@ public class DocenteController {
     }
 
     // GET /material/descargar/:id  — descargar archivo de material de estudio
-    public ModelAndView handleDescargarMaterial(Request req, Response res) {
+    public Object handleDescargarMaterial(Request req, Response res) {
         Integer id = Integer.parseInt(req.params(":id"));
         MaterialEstudio material = MaterialEstudio.findById(id);
         if (material == null) {

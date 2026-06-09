@@ -1,14 +1,16 @@
 package com.is1.proyecto.routes;
-import com.is1.proyecto.controller.AdminController;
-import spark.template.mustache.MustacheTemplateEngine;
+
 import static spark.Spark.get;
 import static spark.Spark.post;
 
+import com.is1.proyecto.controller.AdminController;
+import spark.template.mustache.MustacheTemplateEngine;
+
 public class AdminRoutes {
+
     public static void register(AdminController controller, MustacheTemplateEngine engine) {
-
         get("/admin",(req, res) -> controller.mostrarAdminDashboard(req, res), engine);
-
+        
         // /admin/docentes
         get("/admin/docentes", (req, res) -> controller.mostrarDocentes(req, res), engine);
         get("/admin/docentes/listado", (req, res) -> controller.mostrarListadoDocentes(req, res), engine);
@@ -21,6 +23,5 @@ public class AdminRoutes {
         get("/admin/docentes/:id/materias", (req, res) -> controller.mostrarMateriasDocente(req, res), engine);
         post("/admin/docentes/:id/materias/agregar", (req, res) -> controller.procesarAsignarMateria(req, res));
         post("/admin/docentes/:id/materias/:asignacionId/delete", (req, res) -> controller.procesarQuitarMateria(req, res));
-
     }
 }

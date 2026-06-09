@@ -157,7 +157,7 @@ public class EstudianteController {
     }
 
     // POST /estudiante/inscripcion  — inscribirse a una materia
-    public ModelAndView handleInscripcion(Request req, Response res) {
+    public Object handleInscripcion(Request req, Response res) {
         Integer userId  = req.session().attribute("userId");
         String userRol = req.session().attribute("userRol");
 
@@ -290,7 +290,7 @@ public class EstudianteController {
     }
 
     // POST /estudiante/carrera/inscribir
-    public ModelAndView handleInscribirCarrera(Request req, Response res) {
+    public Object handleInscribirCarrera(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
 
@@ -459,7 +459,7 @@ public class EstudianteController {
     }
 
     // POST /estudiante/examenes/:id/inscribir
-    public ModelAndView handleInscribirExamen(Request req, Response res) {
+    public Object handleInscribirExamen(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Estudiante estudiante = Estudiante.findFirst("user_id = ?", userId);
 
