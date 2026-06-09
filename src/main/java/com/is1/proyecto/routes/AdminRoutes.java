@@ -3,68 +3,78 @@ package com.is1.proyecto.routes;
 import static spark.Spark.get;
 import static spark.Spark.post;
 
-import com.is1.proyecto.controller.AdminController;
+import com.is1.proyecto.controller.AdminController.*;
+
 import spark.template.mustache.MustacheTemplateEngine;
 
 public class AdminRoutes {
 
-    public static void register(AdminController controller, MustacheTemplateEngine engine) {
+    public static void register(MustacheTemplateEngine engine) {
+        
+        // Instanciar controllers
+        AdminDashboardController dashboardController = new AdminDashboardController();
+        AdminDocenteController docenteController = new AdminDocenteController();
+        AdminEstudianteController estudianteController = new AdminEstudianteController();
+        AdminPlanController planController = new AdminPlanController();
+        AdminCarreraController carreraController = new AdminCarreraController();
+        AdminMateriaController materiaController = new AdminMateriaController();
+        
         // === DASHBOARD ===
-        get("/admin", (req, res) -> controller.mostrarAdminDashboard(req, res), engine);
-        get("/admin/auditoria", (req, res) -> controller.mostrarAuditoria(req, res), engine);
+        get("/admin", (req, res) -> dashboardController.mostrarDashboard(req, res), engine);
+        get("/admin/auditoria", (req, res) -> dashboardController.mostrarAuditoria(req, res), engine);
         
         // === DOCENTES ===
-        get("/admin/docentes", (req, res) -> controller.mostrarDocentes(req, res), engine);
-        get("/admin/docentes/listado", (req, res) -> controller.mostrarListadoDocentes(req, res), engine);
-        get("/admin/docentes/agregar", (req, res) -> controller.mostrarFormularioAgregarDocente(req, res), engine);
-        post("/admin/docentes/new", (req, res) -> controller.procesarCrearDocente(req, res));
-        get("/admin/docentes/:id/edit", (req, res) -> controller.mostrarFormularioEditarDocente(req, res), engine);
-        post("/admin/docentes/:id/edit", (req, res) -> controller.procesarEditarDocente(req, res));
-        get("/admin/docentes/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarDocente(req, res), engine);
-        post("/admin/docentes/:id/delete", (req, res) -> controller.procesarEliminarDocente(req, res));
-        get("/admin/docentes/:id/materias", (req, res) -> controller.mostrarMateriasDocente(req, res), engine);
-        post("/admin/docentes/:id/materias/agregar", (req, res) -> controller.procesarAsignarMateria(req, res));
-        post("/admin/docentes/:id/materias/:asignacionId/delete", (req, res) -> controller.procesarQuitarMateria(req, res));
-
-        // === ESTUDIANTES ===
-        get("/admin/estudiantes", (req, res) -> controller.mostrarEstudiantes(req, res), engine);
-        get("/admin/estudiantes/listado", (req, res) -> controller.mostrarListadoEstudiantes(req, res), engine);
-        get("/admin/estudiantes/agregar", (req, res) -> controller.mostrarFormularioAgregarEstudiante(req, res), engine);
-        post("/admin/estudiantes/new", (req, res) -> controller.procesarCrearEstudiante(req, res));
-        get("/admin/estudiantes/:id/edit", (req, res) -> controller.mostrarFormularioEditarEstudiante(req, res), engine);
-        post("/admin/estudiantes/:id/edit", (req, res) -> controller.procesarEditarEstudiante(req, res));
-        get("/admin/estudiantes/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarEstudiante(req, res), engine);
-        post("/admin/estudiantes/:id/delete", (req, res) -> controller.procesarEliminarEstudiante(req, res));
-        get("/admin/estudiantes/:legajo/materias", (req, res) -> controller.mostrarMateriasParaInscribir(req, res), engine);
-        post("/admin/estudiantes/:legajo/inscribir", (req, res) -> controller.procesarInscribirMateria(req, res));
+        get("/admin/docentes", (req, res) -> docenteController.listar(req, res), engine);
+        get("/admin/docentes/listado", (req, res) -> docenteController.listadoCompleto(req, res), engine);
+        get("/admin/docentes/agregar", (req, res) -> docenteController.mostrarFormularioAgregar(req, res), engine);
+        post("/admin/docentes/new", (req, res) -> docenteController.crear(req, res));
+        get("/admin/docentes/:id/edit", (req, res) -> docenteController.mostrarFormularioEditar(req, res), engine);
+        post("/admin/docentes/:id/edit", (req, res) -> docenteController.editar(req, res));
+        get("/admin/docentes/:id/delete", (req, res) -> docenteController.mostrarConfirmacionEliminar(req, res), engine);
+        post("/admin/docentes/:id/delete", (req, res) -> docenteController.eliminar(req, res));
+        get("/admin/docentes/:id/materias", (req, res) -> docenteController.mostrarMaterias(req, res), engine);
+        post("/admin/docentes/:id/materias/agregar", (req, res) -> docenteController.asignarMateria(req, res));
+        post("/admin/docentes/:id/materias/:asignacionId/delete", (req, res) -> docenteController.quitarMateria(req, res));
         
-        // === PLANES DE ESTUDIO ===
-        get("/admin/planes", (req, res) -> controller.mostrarPlanes(req, res), engine);
-        get("/admin/planes/agregar", (req, res) -> controller.mostrarFormularioAgregarPlan(req, res), engine);
-        post("/admin/planes/agregar", (req, res) -> controller.procesarCrearPlan(req, res));
-        get("/admin/planes/:id/edit", (req, res) -> controller.mostrarFormularioEditarPlan(req, res), engine);
-        post("/admin/planes/:id/edit", (req, res) -> controller.procesarEditarPlan(req, res));
-        get("/admin/planes/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarPlan(req, res), engine);
-        post("/admin/planes/:id/delete", (req, res) -> controller.procesarEliminarPlan(req, res));
-        get("/admin/planes/:id/materias", (req, res) -> controller.mostrarMateriasDelPlan(req, res), engine);
-
+        // === ESTUDIANTES ===
+        get("/admin/estudiantes", (req, res) -> estudianteController.listar(req, res), engine);
+        get("/admin/estudiantes/listado", (req, res) -> estudianteController.listadoCompleto(req, res), engine);
+        get("/admin/estudiantes/agregar", (req, res) -> estudianteController.mostrarFormularioAgregar(req, res), engine);
+        post("/admin/estudiantes/new", (req, res) -> estudianteController.crear(req, res));
+        get("/admin/estudiantes/:id/edit", (req, res) -> estudianteController.mostrarFormularioEditar(req, res), engine);
+        post("/admin/estudiantes/:id/edit", (req, res) -> estudianteController.editar(req, res));
+        get("/admin/estudiantes/:id/delete", (req, res) -> estudianteController.mostrarConfirmacionEliminar(req, res), engine);
+        post("/admin/estudiantes/:id/delete", (req, res) -> estudianteController.eliminar(req, res));
+        get("/admin/estudiantes/:legajo/materias", (req, res) -> estudianteController.mostrarMateriasParaInscribir(req, res), engine);
+        post("/admin/estudiantes/:legajo/inscribir", (req, res) -> estudianteController.inscribirMateria(req, res));
+        
+        // === PLANES ===
+        get("/admin/planes", (req, res) -> planController.listar(req, res), engine);
+        get("/admin/planes/agregar", (req, res) -> planController.mostrarFormularioAgregar(req, res), engine);
+        post("/admin/planes/agregar", (req, res) -> planController.crear(req, res));
+        get("/admin/planes/:id/edit", (req, res) -> planController.mostrarFormularioEditar(req, res), engine);
+        post("/admin/planes/:id/edit", (req, res) -> planController.editar(req, res));
+        get("/admin/planes/:id/delete", (req, res) -> planController.mostrarConfirmacionEliminar(req, res), engine);
+        post("/admin/planes/:id/delete", (req, res) -> planController.eliminar(req, res));
+        get("/admin/planes/:id/materias", (req, res) -> planController.mostrarMaterias(req, res), engine);
+        
         // === CARRERAS ===
-        get("/admin/carreras", (req, res) -> controller.mostrarCarreras(req, res), engine);
-        get("/admin/carreras/agregar", (req, res) -> controller.mostrarFormularioAgregarCarrera(req, res), engine);
-        post("/admin/carreras/agregar", (req, res) -> controller.procesarCrearCarrera(req, res));
-        get("/admin/carreras/:id/edit", (req, res) -> controller.mostrarFormularioEditarCarrera(req, res), engine);
-        post("/admin/carreras/:id/edit", (req, res) -> controller.procesarEditarCarrera(req, res));
-        get("/admin/carreras/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarCarrera(req, res), engine);
-        post("/admin/carreras/:id/delete", (req, res) -> controller.procesarEliminarCarrera(req, res));
+        get("/admin/carreras", (req, res) -> carreraController.listar(req, res), engine);
+        get("/admin/carreras/agregar", (req, res) -> carreraController.mostrarFormularioAgregar(req, res), engine);
+        post("/admin/carreras/agregar", (req, res) -> carreraController.crear(req, res));
+        get("/admin/carreras/:id/edit", (req, res) -> carreraController.mostrarFormularioEditar(req, res), engine);
+        post("/admin/carreras/:id/edit", (req, res) -> carreraController.editar(req, res));
+        get("/admin/carreras/:id/delete", (req, res) -> carreraController.mostrarConfirmacionEliminar(req, res), engine);
+        post("/admin/carreras/:id/delete", (req, res) -> carreraController.eliminar(req, res));
         
         // === MATERIAS ===
-        get("/admin/materias", (req, res) -> controller.mostrarMaterias(req, res), engine);
-        get("/admin/materias/listado", (req, res) -> controller.mostrarListadoMaterias(req, res), engine);
-        get("/admin/materias/agregar", (req, res) -> controller.mostrarFormularioAgregarMateria(req, res), engine);
-        post("/admin/materias/agregar", (req, res) -> controller.procesarCrearMateria(req, res));
-        get("/admin/materias/:id/edit", (req, res) -> controller.mostrarFormularioEditarMateria(req, res), engine);
-        post("/admin/materias/:id/edit", (req, res) -> controller.procesarEditarMateria(req, res));
-        get("/admin/materias/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarMateria(req, res), engine);
-        post("/admin/materias/:id/delete", (req, res) -> controller.procesarEliminarMateria(req, res));
+        get("/admin/materias", (req, res) -> materiaController.listar(req, res), engine);
+        get("/admin/materias/listado", (req, res) -> materiaController.listadoCompleto(req, res), engine);
+        get("/admin/materias/agregar", (req, res) -> materiaController.mostrarFormularioAgregar(req, res), engine);
+        post("/admin/materias/agregar", (req, res) -> materiaController.crear(req, res));
+        get("/admin/materias/:id/edit", (req, res) -> materiaController.mostrarFormularioEditar(req, res), engine);
+        post("/admin/materias/:id/edit", (req, res) -> materiaController.editar(req, res));
+        get("/admin/materias/:id/delete", (req, res) -> materiaController.mostrarConfirmacionEliminar(req, res), engine);
+        post("/admin/materias/:id/delete", (req, res) -> materiaController.eliminar(req, res));
     }
 }

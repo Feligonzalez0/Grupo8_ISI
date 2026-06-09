@@ -406,10 +406,11 @@ public class DocenteController {
             return null;
         }
 
+        /* 
         if(!"APROBADO".equals(resultado) && !"LIBRE".equals(resultado)) {
             res.redirect("/docente/notas?errorMessage=Resultado inválido.");
             return null;
-        }
+        }*/
 
         int idExamen = Integer.parseInt(idExamenStr);
         int dniEstudiante = Integer.parseInt(dniEstudianteStr);

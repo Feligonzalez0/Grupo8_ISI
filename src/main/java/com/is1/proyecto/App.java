@@ -70,7 +70,7 @@ public class App {
         DashboardRoutes.register(new DashboardController(new AuthService()), engine);
         EstudianteRoutes.register(new EstudianteController(), engine);
         DocenteRoutes.register(new DocenteController(), engine);
-        AdminRoutes.register(new AdminController(), engine);
+        AdminRoutes.register(engine);
 
         // --- Manejo de errores ---
         // Ir a una ruta que no existe.
