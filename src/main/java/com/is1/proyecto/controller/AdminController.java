@@ -8,9 +8,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.is1.proyecto.services.AuditoriaService;
-import com.is1.proyecto.services.adminService.AdminDocenteService;
-import com.is1.proyecto.services.adminService.AdminEstudianteService;
-import com.is1.proyecto.services.adminService.AdminPlanService;
+import com.is1.proyecto.services.adminService.*;
 
 import spark.ModelAndView;
 import spark.Request;
@@ -24,17 +22,6 @@ import spark.Response;
  *   - Leer parámetros del formulario y de la URL.
  *   - Delegar toda la lógica de negocio al servicio correspondiente.
  *   - Construir el modelo de vista y devolver el ModelAndView, o redirigir.
- *
- * Rutas que maneja actualmente:
- *   GET  /admin
- *   GET  /admin/docentes
- *   GET  /admin/docentes/listado
- *   GET  /admin/docentes/agregar
- *   POST /admin/docentes/new
- *   GET  /admin/docentes/:id/edit
- *   POST /admin/docentes/:id/edit
- *   GET  /admin/docentes/:id/delete
- *   POST /admin/docentes/:id/delete
  */
 public class AdminController {
 
@@ -43,14 +30,16 @@ public class AdminController {
     private final AdminDocenteService adminDocenteService;
     private final AdminEstudianteService adminEstudianteService;
     private final AdminPlanService adminPlanService;
+    private final AdminCarreraService adminCarreraService;
+    private final AdminMateriaService adminMateriaService;
 
     // Constructor
-    public AdminController(AdminDocenteService adminDocenteService, 
-                        AdminEstudianteService adminEstudianteService,
-                        AdminPlanService adminPlanService) {
-        this.adminDocenteService = adminDocenteService;
-        this.adminEstudianteService = adminEstudianteService;
-        this.adminPlanService = adminPlanService;
+    public AdminController() {
+        this.adminDocenteService = new AdminDocenteService();
+        this.adminEstudianteService = new AdminEstudianteService();
+        this.adminPlanService = new AdminPlanService();
+        this.adminCarreraService = new AdminCarreraService();
+        this.adminMateriaService = new AdminMateriaService();
     }
 
     // GET /admin  —  Dashboard de administración
@@ -628,6 +617,270 @@ public class AdminController {
 
         return new ModelAndView(vista, "admin/planes/materiasPlan.mustache");
     }
+    
+    // ================== CARRERAS ==================
+
+    // GET /admin/carreras
+    public ModelAndView mostrarCarreras(Request req, Response res) {
+        List<Map<String, Object>> carreras = AdminCarreraService.listarCarreras();
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("carreras", carreras);
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/carreras/carrerasDashboard.mustache");
+    }
+
+    // GET /admin/carreras/agregar
+    public ModelAndView mostrarFormularioAgregarCarrera(Request req, Response res) {
+        Map<String, Object> model = new HashMap<>();
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/carreras/agregarCarrera.mustache");
+    }
+
+    // POST /admin/carreras/agregar
+    public Object procesarCrearCarrera(Request req, Response res) {
+        String nombre = req.queryParams("nombre");
+        String descripcion = req.queryParams("descripcion");
+
+        try {
+            adminCarreraService.crearCarrera(nombre, descripcion);
+
+            AuditoriaService.registrarAuditoria(req, "CREAR_CARRERA", "Nombre: " + nombre);
+
+            res.redirect("/admin/carreras?successMessage=Carrera creada correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/carreras/agregar?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al crear carrera: {}", e.getMessage());
+            res.redirect("/admin/carreras/agregar?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/carreras/:id/edit
+    public ModelAndView mostrarFormularioEditarCarrera(Request req, Response res) {
+        Integer codCarrera = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> carrera = adminCarreraService.obtenerCarreraParaVista(codCarrera);
+        if (carrera == null) {
+            res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+            return null;
+        }
+
+        agregarMensajes(req, carrera);
+
+        return new ModelAndView(carrera, "admin/carreras/editarCarrera.mustache");
+    }
+
+    // POST /admin/carreras/:id/edit
+    public Object procesarEditarCarrera(Request req, Response res) {
+        Integer codCarrera = Integer.parseInt(req.params(":id"));
+
+        String nombre = req.queryParams("nombre");
+        String descripcion = req.queryParams("descripcion");
+
+        try {
+            adminCarreraService.editarCarrera(codCarrera, nombre, descripcion);
+
+            AuditoriaService.registrarAuditoria(req, "EDITAR_CARRERA", "Código: " + codCarrera);
+
+            res.redirect("/admin/carreras?successMessage=Carrera actualizada correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/carreras/" + codCarrera + "/edit?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al editar carrera {}: {}", codCarrera, e.getMessage());
+            res.redirect("/admin/carreras/" + codCarrera + "/edit?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/carreras/:id/delete
+    public ModelAndView mostrarConfirmacionEliminarCarrera(Request req, Response res) {
+        Integer codCarrera = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> vista = adminCarreraService.obtenerVistaEliminarCarrera(codCarrera);
+        if (vista == null) {
+            res.redirect("/admin/carreras?errorMessage=Carrera no encontrada.");
+            return null;
+        }
+
+        return new ModelAndView(vista, "admin/carreras/eliminarCarrera.mustache");
+    }
+
+    // POST /admin/carreras/:id/delete
+    public Object procesarEliminarCarrera(Request req, Response res) {
+        Integer codCarrera = Integer.parseInt(req.params(":id"));
+
+        try {
+            adminCarreraService.eliminarCarrera(codCarrera);
+
+            AuditoriaService.registrarAuditoria(req, "ELIMINAR_CARRERA", "Código: " + codCarrera);
+
+            res.redirect("/admin/carreras?successMessage=Carrera eliminada correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/carreras?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al eliminar carrera {}: {}", codCarrera, e.getMessage());
+            res.redirect("/admin/carreras?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }    
+
+    // ================== MATERIAS ==================
+
+    // GET /admin/materias
+    public ModelAndView mostrarMaterias(Request req, Response res) {
+        List<Map<String, Object>> materias = AdminMateriaService.listarMaterias();
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("materias", materias);
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/materias/materiasDashboard.mustache");
+    }
+
+    // GET /admin/materias/listado
+    public ModelAndView mostrarListadoMaterias(Request req, Response res) {
+        List<Map<String, Object>> materias = AdminMateriaService.listarMateriasParaListado();
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("materias", materias);
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/materias/listadoMaterias.mustache");
+    }
+
+    // GET /admin/materias/agregar
+    public ModelAndView mostrarFormularioAgregarMateria(Request req, Response res) {
+        Map<String, Object> model = new HashMap<>();
+        
+        List<Map<String, Object>> planes = adminMateriaService.listarPlanes();
+        model.put("planes", planes);
+        model.put("sinPlanes", planes.isEmpty());
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/materias/agregarMateria.mustache");
+    }
+
+    // POST /admin/materias/agregar
+    public Object procesarCrearMateria(Request req, Response res) {
+        String nombre = req.queryParams("nombre");
+        String codigo = req.queryParams("cod_materia");
+        String descripcion = req.queryParams("descripcion");
+        String codPlanStr = req.queryParams("cod_plan");
+
+        try {
+            adminMateriaService.crearMateria(nombre, codigo, descripcion, codPlanStr);
+
+            AuditoriaService.registrarAuditoria(req, "CREAR_MATERIA", "Nombre: " + nombre);
+
+            res.redirect("/admin/materias?successMessage=Materia creada correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/materias/agregar?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al crear materia: {}", e.getMessage());
+            res.redirect("/admin/materias/agregar?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/materias/:id/edit
+    public ModelAndView mostrarFormularioEditarMateria(Request req, Response res) {
+        Integer codMateria = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> materia = adminMateriaService.obtenerMateriaParaVista(codMateria);
+        if (materia == null) {
+            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+            return null;
+        }
+
+        List<Map<String, Object>> planes = adminMateriaService.listarPlanesConSelected(
+            (Integer) materia.get("codPlan")
+        );
+
+        Map<String, Object> model = new HashMap<>();
+        model.putAll(materia);
+        model.put("planes", planes);
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/materias/editarMateria.mustache");
+    }
+
+    // POST /admin/materias/:id/edit
+    public Object procesarEditarMateria(Request req, Response res) {
+        Integer codMateria = Integer.parseInt(req.params(":id"));
+
+        String nombre = req.queryParams("nombre");
+        String descripcion = req.queryParams("descripcion");
+        String codPlanStr = req.queryParams("cod_plan");
+
+        try {
+            adminMateriaService.editarMateria(codMateria, nombre, descripcion, codPlanStr);
+
+            AuditoriaService.registrarAuditoria(req, "EDITAR_MATERIA", "Código materia: " + codMateria);
+
+            res.redirect("/admin/materias?successMessage=Materia actualizada correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al editar materia {}: {}", codMateria, e.getMessage());
+            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/materias/:id/delete
+    public ModelAndView mostrarConfirmacionEliminarMateria(Request req, Response res) {
+        Integer codMateria = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> materia = adminMateriaService.obtenerMateriaParaVista(codMateria);
+        if (materia == null) {
+            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+            return null;
+        }
+
+        return new ModelAndView(materia, "admin/materias/eliminarMateria.mustache");
+    }
+
+    // POST /admin/materias/:id/delete
+    public Object procesarEliminarMateria(Request req, Response res) {
+        Integer codMateria = Integer.parseInt(req.params(":id"));
+
+        try {
+            adminMateriaService.eliminarMateria(codMateria);
+
+            AuditoriaService.registrarAuditoria(req, "ELIMINAR_MATERIA", "Código materia: " + codMateria);
+
+            res.redirect("/admin/materias?successMessage=Materia eliminada correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/materias?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al eliminar materia {}: {}", codMateria, e.getMessage());
+            res.redirect("/admin/materias?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
     // HELPERS PRIVADOS
     private void agregarMensajes(Request req, Map<String, Object> model) {
         String success = req.queryParams("successMessage");

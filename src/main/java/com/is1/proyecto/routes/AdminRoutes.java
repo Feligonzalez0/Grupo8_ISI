@@ -46,5 +46,24 @@ public class AdminRoutes {
         get("/admin/planes/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarPlan(req, res), engine);
         post("/admin/planes/:id/delete", (req, res) -> controller.procesarEliminarPlan(req, res));
         get("/admin/planes/:id/materias", (req, res) -> controller.mostrarMateriasDelPlan(req, res), engine);
+
+        // === CARRERAS ===
+        get("/admin/carreras", (req, res) -> controller.mostrarCarreras(req, res), engine);
+        get("/admin/carreras/agregar", (req, res) -> controller.mostrarFormularioAgregarCarrera(req, res), engine);
+        post("/admin/carreras/agregar", (req, res) -> controller.procesarCrearCarrera(req, res));
+        get("/admin/carreras/:id/edit", (req, res) -> controller.mostrarFormularioEditarCarrera(req, res), engine);
+        post("/admin/carreras/:id/edit", (req, res) -> controller.procesarEditarCarrera(req, res));
+        get("/admin/carreras/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarCarrera(req, res), engine);
+        post("/admin/carreras/:id/delete", (req, res) -> controller.procesarEliminarCarrera(req, res));
+        
+        // === MATERIAS ===
+        get("/admin/materias", (req, res) -> controller.mostrarMaterias(req, res), engine);
+        get("/admin/materias/listado", (req, res) -> controller.mostrarListadoMaterias(req, res), engine);
+        get("/admin/materias/agregar", (req, res) -> controller.mostrarFormularioAgregarMateria(req, res), engine);
+        post("/admin/materias/agregar", (req, res) -> controller.procesarCrearMateria(req, res));
+        get("/admin/materias/:id/edit", (req, res) -> controller.mostrarFormularioEditarMateria(req, res), engine);
+        post("/admin/materias/:id/edit", (req, res) -> controller.procesarEditarMateria(req, res));
+        get("/admin/materias/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarMateria(req, res), engine);
+        post("/admin/materias/:id/delete", (req, res) -> controller.procesarEliminarMateria(req, res));
     }
 }
