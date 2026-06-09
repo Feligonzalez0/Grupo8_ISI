@@ -1,7 +1,6 @@
 
 package com.is1.proyecto.services;
  
-import com.is1.proyecto.config.AppConfig;
 import com.is1.proyecto.models.AuditoriaAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,7 +8,7 @@ import spark.Request;
  
 public class AuditoriaService {
     
-    
+
 private static final Logger logger = LoggerFactory.getLogger(AuditoriaService.class);
 
 public static void registrarAuditoria(Request req, String accion, String detalle) {
