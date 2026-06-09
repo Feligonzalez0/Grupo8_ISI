@@ -28,9 +28,9 @@ import com.is1.proyecto.models.User;
  *
  * No conoce nada de Spark (Request, Response, sesiones).
  */
-public class DocenteService {
+public class AdminDocenteService {
 
-    private static final Logger logger = LoggerFactory.getLogger(DocenteService.class);
+    private static final Logger logger = LoggerFactory.getLogger(AdminDocenteService.class);
 
     // LISTAR
     public static List<Map<String, Object>> listarDocentes() {
@@ -308,7 +308,7 @@ public class DocenteService {
 
                 Map<String, Object> item = new HashMap<>();
 
-                item.put("codigo", codigo);
+                item.put("cod_Materia", codigo);
                 item.put("nombre", materia.getString("nombre"));
 
                 materiasDisponibles.add(item);

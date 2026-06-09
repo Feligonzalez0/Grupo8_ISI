@@ -39,7 +39,7 @@ public class DocenteController {
         Docente docente = Docente.findFirst("user_id = ?", userId);
 
         if(docente == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
+            res.redirect("/dashboard?error=No se encontro el perfil de docente.");
             return null;
         }
 
