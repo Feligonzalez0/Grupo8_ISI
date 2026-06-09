@@ -9,7 +9,7 @@ import spark.template.mustache.MustacheTemplateEngine;
 public class AdminRoutes {
 
     public static void register(AdminController controller, MustacheTemplateEngine engine) {
-        // Dashboard
+        // === DASHBOARD ===
         get("/admin", (req, res) -> controller.mostrarAdminDashboard(req, res), engine);
         
         // === DOCENTES ===
