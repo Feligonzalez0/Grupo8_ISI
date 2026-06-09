@@ -11,6 +11,7 @@ public class AdminRoutes {
     public static void register(AdminController controller, MustacheTemplateEngine engine) {
         // === DASHBOARD ===
         get("/admin", (req, res) -> controller.mostrarAdminDashboard(req, res), engine);
+        get("/admin/auditoria", (req, res) -> controller.mostrarAuditoria(req, res), engine);
         
         // === DOCENTES ===
         get("/admin/docentes", (req, res) -> controller.mostrarDocentes(req, res), engine);

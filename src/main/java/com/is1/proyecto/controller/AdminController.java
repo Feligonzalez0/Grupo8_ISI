@@ -1,5 +1,6 @@
 package com.is1.proyecto.controller;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,6 +8,7 @@ import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.is1.proyecto.models.AuditoriaAdmin;
 import com.is1.proyecto.services.AuditoriaService;
 import com.is1.proyecto.services.adminService.*;
 
@@ -879,6 +881,28 @@ public class AdminController {
         }
 
         return null;
+    }
+
+    // GET /admin/auditoria  —  Listado de registros de auditoría
+    public ModelAndView mostrarAuditoria(Request req, Response res) {
+        List<AuditoriaAdmin> logsDB = AuditoriaAdmin.findAll().orderBy("id DESC");
+        List<Map<String, Object>> logs = new ArrayList<>();
+
+        for(AuditoriaAdmin log : logsDB) { 
+            Map<String, Object> logView = new HashMap<>();
+            logView.put("usuario", log.getUsuario());
+            logView.put("accion", log.getAccion());
+            logView.put("detalle", log.getDetalle());
+            logView.put("fecha", log.getFecha());
+            logs.add(logView);
+        }
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("logs",  logs); 
+        model.put("sinLogs", logs.isEmpty());
+
+        return new ModelAndView(model, "admin/adminAuditoria.mustache");
+
     }
 
     // HELPERS PRIVADOS

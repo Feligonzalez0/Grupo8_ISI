@@ -1,10 +1,5 @@
 package com.is1.proyecto; // Define el paquete de la aplicación, debe coincidir con la estructura de carpetas.
 
-import java.util.ArrayList;
-import java.util.HashMap; // Utilidad para serializar/deserializar objetos Java a/desde JSON.
-import java.util.List;
-import java.util.Map; // Importa los métodos estáticos principales de Spark (get, post, before, after, etc.).
-
 import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestionar la conexión a la base de datos.
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,18 +7,14 @@ import org.slf4j.LoggerFactory;
 import com.is1.proyecto.config.*; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.controller.*;
 import com.is1.proyecto.filters.AuthFilter;
-import com.is1.proyecto.models.*;
 import com.is1.proyecto.routes.*;
 import com.is1.proyecto.services.*;
 
-import spark.ModelAndView;
 import spark.template.mustache.MustacheTemplateEngine;
 import static spark.Spark.notFound;
 import static spark.Spark.internalServerError;
 import static spark.Spark.exception;
 import static spark.Spark.port;
-import static spark.Spark.post;
-import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
 
 // mvn clean compile activejdbc-instrumentation:instrument exec:java "-Dexec.mainClass=com.is1.proyecto.App"
 
@@ -37,16 +28,16 @@ public class App {
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     private static void ejecutarScheme() {
-    try {
-        String sql = new String(App.class.getClassLoader().getResourceAsStream("scheme.sql").readAllBytes());
-        Base.exec(sql);
+        try {
+            String sql = new String(App.class.getClassLoader().getResourceAsStream("scheme.sql").readAllBytes());
+            Base.exec(sql);
 
-        System.out.println("Schema ejecutado correctamente.");
-    } catch (Exception e) {
-        System.err.println("Error ejecutando schema.sql");
-        e.printStackTrace();
+            System.out.println("Schema ejecutado correctamente.");
+        } catch (Exception e) {
+            System.err.println("Error ejecutando schema.sql");
+            e.printStackTrace();
+        }
     }
-}
 
     /**
      * Método principal que se ejecuta al iniciar la aplicación.
@@ -79,9 +70,7 @@ public class App {
         DashboardRoutes.register(new DashboardController(new AuthService()), engine);
         EstudianteRoutes.register(new EstudianteController(), engine);
         DocenteRoutes.register(new DocenteController(), engine);
-        
-        AdminController adminController = new AdminController();
-        AdminRoutes.register(adminController, engine);
+        AdminRoutes.register(new AdminController(), engine);
 
         // --- Manejo de errores ---
         // Ir a una ruta que no existe.
@@ -113,32 +102,5 @@ public class App {
         exception(spark.HaltException.class, (e, req, res) -> {
             logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
         });
-        
-        get("/admin/auditoria", (req, res) -> {
-            Map<String, Object> model = new HashMap<>();
-
-            List<AuditoriaAdmin> logsDB = AuditoriaAdmin.findAll().orderBy("id DESC");
-
-            List<Map<String, Object>> logs = new ArrayList<>();
-            for(AuditoriaAdmin log : logsDB) {
-                Map<String, Object> logView = new HashMap<>();
-                logView.put("usuario", log.getUsuario());
-                logView.put("accion",  log.getAccion());
-                logView.put("detalle", log.getDetalle());
-                logView.put("fecha",   log.getFecha());
-                logs.add(logView);
-            }
-
-            model.put("logs",    logs);
-            model.put("sinLogs", logs.isEmpty());
-
-            return new ModelAndView(model, "admin/adminAuditoria.mustache");
-        }, new MustacheTemplateEngine());
-        } // Fin del método main
-
-        // HELPERS
-        public static boolean esEmailValido(String email) {
-            String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
-            return email != null && email.matches(regex);
-        }
-} // Fin de la clase App
+    }
+}
