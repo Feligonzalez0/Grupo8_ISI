@@ -4,17 +4,23 @@ import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestion
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.is1.proyecto.config.*; // Motor de plantillas Mustache para Spark.
-import com.is1.proyecto.controller.*;
+import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
+import com.is1.proyecto.controller.AuthController;
+import com.is1.proyecto.controller.DashboardController;
+import com.is1.proyecto.controller.EstudianteController;
 import com.is1.proyecto.filters.AuthFilter;
-import com.is1.proyecto.routes.*;
-import com.is1.proyecto.services.*;
+import com.is1.proyecto.routes.AdminRoutes;
+import com.is1.proyecto.routes.AuthRoutes;
+import com.is1.proyecto.routes.DashboardRoutes;
+import com.is1.proyecto.routes.DocenteRoutes;
+import com.is1.proyecto.routes.EstudianteRoutes;
+import com.is1.proyecto.services.AuthService;
 
-import spark.template.mustache.MustacheTemplateEngine;
-import static spark.Spark.notFound;
-import static spark.Spark.internalServerError;
 import static spark.Spark.exception;
+import static spark.Spark.internalServerError;
+import static spark.Spark.notFound;
 import static spark.Spark.port;
+import spark.template.mustache.MustacheTemplateEngine;
 
 // mvn clean compile activejdbc-instrumentation:instrument exec:java "-Dexec.mainClass=com.is1.proyecto.App"
 
@@ -69,7 +75,7 @@ public class App {
         // --- Rutas ---
         DashboardRoutes.register(new DashboardController(new AuthService()), engine);
         EstudianteRoutes.register(new EstudianteController(), engine);
-        DocenteRoutes.register(new DocenteController(), engine);
+        DocenteRoutes.register(engine);
         AdminRoutes.register(engine);
 
         // --- Manejo de errores ---
