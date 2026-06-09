@@ -1,7 +1,10 @@
 com\is1\proyecto\App.class
+com\is1\proyecto\controller\DocenteCrudController.class
+com\is1\proyecto\controller\AdminController.class
 com\is1\proyecto\models\Cargo.class
 com\is1\proyecto\models\Estado.class
 com\is1\proyecto\models\User.class
+com\is1\proyecto\routes\AdminRoutes.class
 com\is1\proyecto\models\Situacion.class
 com\is1\proyecto\services\AuditoriaService.class
 com\is1\proyecto\filters\AuthFilter.class
@@ -9,7 +12,9 @@ com\is1\proyecto\models\Docente.class
 com\is1\proyecto\config\AppConfig.class
 com\is1\proyecto\models\Persona.class
 com\is1\proyecto\models\Estudiante.class
+com\is1\proyecto\controller\CrudController.class
 com\is1\proyecto\models\InscripcionCarrera.class
+com\is1\proyecto\routes\DashboardRoutes.class
 com\is1\proyecto\services\AuthService.class
 com\is1\proyecto\models\Materia.class
 com\is1\proyecto\models\Rol.class
@@ -17,6 +22,7 @@ com\is1\proyecto\models\Carrera.class
 com\is1\proyecto\models\MaterialEstudio.class
 com\is1\proyecto\models\Admin.class
 com\is1\proyecto\models\InscripcionExamen.class
+com\is1\proyecto\services\DocenteService.class
 com\is1\proyecto\models\ExamenFinal.class
 com\is1\proyecto\models\TEstado.class
 com\is1\proyecto\models\PlanDeEstudios.class
@@ -26,3 +32,4 @@ com\is1\proyecto\controller\AuthController.class
 com\is1\proyecto\config\DBConfigSingleton.class
 com\is1\proyecto\models\AuditoriaAdmin.class
 com\is1\proyecto\models\Correlatividad.class
+com\is1\proyecto\controller\DashboardController.class
