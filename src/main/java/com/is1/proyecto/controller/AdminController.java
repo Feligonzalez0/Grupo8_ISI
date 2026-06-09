@@ -8,8 +8,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.is1.proyecto.services.AuditoriaService;
-import com.is1.proyecto.services.AdminDocenteService;
-import com.is1.proyecto.services.AdminEstudianteService;
+import com.is1.proyecto.services.adminService.AdminDocenteService;
+import com.is1.proyecto.services.adminService.AdminEstudianteService;
+import com.is1.proyecto.services.adminService.AdminPlanService;
 
 import spark.ModelAndView;
 import spark.Request;
@@ -41,13 +42,15 @@ public class AdminController {
 
     private final AdminDocenteService adminDocenteService;
     private final AdminEstudianteService adminEstudianteService;
-
+    private final AdminPlanService adminPlanService;
 
     // Constructor
     public AdminController(AdminDocenteService adminDocenteService, 
-                        AdminEstudianteService adminEstudianteService) {
+                        AdminEstudianteService adminEstudianteService,
+                        AdminPlanService adminPlanService) {
         this.adminDocenteService = adminDocenteService;
         this.adminEstudianteService = adminEstudianteService;
+        this.adminPlanService = adminPlanService;
     }
 
     // GET /admin  —  Dashboard de administración
@@ -55,6 +58,7 @@ public class AdminController {
         return new ModelAndView(new HashMap<>(), "admin/adminDashboard.mustache");
     }
 
+    // === DOCENTES ===
     // GET /admin/docentes  —  Listado de docentes (dashboard)
     public ModelAndView mostrarDocentes(Request req, Response res) {
         List<Map<String, Object>> docentes = AdminDocenteService.listarDocentes();
@@ -471,6 +475,158 @@ public class AdminController {
         }
 
         return null;
+    }
+
+    // ================== PLANES DE ESTUDIO ==================
+
+    // GET /admin/planes
+    public ModelAndView mostrarPlanes(Request req, Response res) {
+        List<Map<String, Object>> planes = AdminPlanService.listarPlanes();
+
+        Map<String, Object> model = new HashMap<>();
+        model.put("planes", planes);
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/planes/planesDashboard.mustache");
+    }
+
+    // GET /admin/planes/agregar
+    public ModelAndView mostrarFormularioAgregarPlan(Request req, Response res) {
+        Map<String, Object> model = new HashMap<>();
+        model.put("carreras", adminPlanService.listarCarreras());
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/planes/agregarPlan.mustache");
+    }
+
+    // POST /admin/planes/agregar
+    public Object procesarCrearPlan(Request req, Response res) {
+        String anioStr = req.queryParams("anio");
+        String vigenciaStr = req.queryParams("vigencia");
+        String aniosTotalStr = req.queryParams("anios_total");
+        String cantMatStr = req.queryParams("cantidad_materias_total");
+        String codCarreraStr = req.queryParams("cod_carrera");
+
+        try {
+            adminPlanService.crearPlan(anioStr, vigenciaStr, aniosTotalStr, cantMatStr, codCarreraStr);
+
+            AuditoriaService.registrarAuditoria(req, "CREAR_PLAN", 
+                    "Año: " + anioStr + " - Carrera: " + codCarreraStr);
+
+            res.redirect("/admin/planes?successMessage=Plan creado correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/planes/agregar?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al crear plan: {}", e.getMessage());
+            res.redirect("/admin/planes/agregar?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/planes/:id/edit
+    public ModelAndView mostrarFormularioEditarPlan(Request req, Response res) {
+        Integer codPlan = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> plan = adminPlanService.obtenerPlanParaVista(codPlan);
+        if (plan == null) {
+            res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+            return null;
+        }
+
+        Map<String, Object> carrerasData = adminPlanService.obtenerCarrerasParaSelect(codPlan);
+        if (carrerasData == null) {
+            res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+            return null;
+        }
+
+        Map<String, Object> model = new HashMap<>();
+        model.putAll(plan);
+        model.putAll(carrerasData);
+        agregarMensajes(req, model);
+
+        return new ModelAndView(model, "admin/planes/editarPlan.mustache");
+    }
+
+    // POST /admin/planes/:id/edit
+    public Object procesarEditarPlan(Request req, Response res) {
+        Integer codPlan = Integer.parseInt(req.params(":id"));
+
+        String vigenciaStr = req.queryParams("vigencia");
+        String aniosTotalStr = req.queryParams("anios_total");
+        String cantMatStr = req.queryParams("cantidad_materias_total");
+        String codCarreraStr = req.queryParams("cod_carrera");
+
+        try {
+            adminPlanService.editarPlan(codPlan, vigenciaStr, aniosTotalStr, cantMatStr, codCarreraStr);
+
+            AuditoriaService.registrarAuditoria(req, "EDITAR_PLAN", "Código plan: " + codPlan);
+
+            res.redirect("/admin/planes?successMessage=Plan actualizado correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/planes/" + codPlan + "/edit?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al editar plan {}: {}", codPlan, e.getMessage());
+            res.redirect("/admin/planes/" + codPlan + "/edit?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/planes/:id/delete
+    public ModelAndView mostrarConfirmacionEliminarPlan(Request req, Response res) {
+        Integer codPlan = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> vista = adminPlanService.obtenerVistaEliminarPlan(codPlan);
+        if (vista == null) {
+            res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+            return null;
+        }
+
+        agregarMensajes(req, vista);
+
+        return new ModelAndView(vista, "admin/planes/eliminarPlan.mustache");
+    }
+
+    // POST /admin/planes/:id/delete
+    public Object procesarEliminarPlan(Request req, Response res) {
+        Integer codPlan = Integer.parseInt(req.params(":id"));
+
+        try {
+            adminPlanService.eliminarPlan(codPlan);
+
+            AuditoriaService.registrarAuditoria(req, "ELIMINAR_PLAN", "Código plan: " + codPlan);
+
+            res.redirect("/admin/planes?successMessage=Plan eliminado correctamente.");
+
+        } catch (IllegalArgumentException e) {
+            res.redirect("/admin/planes?errorMessage=" + encode(e.getMessage()));
+
+        } catch (RuntimeException e) {
+            logger.error("Error al eliminar plan {}: {}", codPlan, e.getMessage());
+            res.redirect("/admin/planes?errorMessage=" + encode(e.getMessage()));
+        }
+
+        return null;
+    }
+
+    // GET /admin/planes/:id/materias
+    public ModelAndView mostrarMateriasDelPlan(Request req, Response res) {
+        Integer codPlan = Integer.parseInt(req.params(":id"));
+
+        Map<String, Object> vista = adminPlanService.obtenerMateriasPorPlan(codPlan);
+        if (vista == null) {
+            res.redirect("/admin/planes?errorMessage=Plan no encontrado.");
+            return null;
+        }
+
+        agregarMensajes(req, vista);
+
+        return new ModelAndView(vista, "admin/planes/materiasPlan.mustache");
     }
     // HELPERS PRIVADOS
     private void agregarMensajes(Request req, Map<String, Object> model) {

@@ -1,4 +1,4 @@
-package com.is1.proyecto.services;
+package com.is1.proyecto.services.adminService;
 
 import java.util.ArrayList;
 import java.util.HashMap;

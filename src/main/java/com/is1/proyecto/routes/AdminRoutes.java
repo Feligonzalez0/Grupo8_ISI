@@ -36,5 +36,15 @@ public class AdminRoutes {
         post("/admin/estudiantes/:id/delete", (req, res) -> controller.procesarEliminarEstudiante(req, res));
         get("/admin/estudiantes/:legajo/materias", (req, res) -> controller.mostrarMateriasParaInscribir(req, res), engine);
         post("/admin/estudiantes/:legajo/inscribir", (req, res) -> controller.procesarInscribirMateria(req, res));
+        
+        // === PLANES DE ESTUDIO ===
+        get("/admin/planes", (req, res) -> controller.mostrarPlanes(req, res), engine);
+        get("/admin/planes/agregar", (req, res) -> controller.mostrarFormularioAgregarPlan(req, res), engine);
+        post("/admin/planes/agregar", (req, res) -> controller.procesarCrearPlan(req, res));
+        get("/admin/planes/:id/edit", (req, res) -> controller.mostrarFormularioEditarPlan(req, res), engine);
+        post("/admin/planes/:id/edit", (req, res) -> controller.procesarEditarPlan(req, res));
+        get("/admin/planes/:id/delete", (req, res) -> controller.mostrarConfirmacionEliminarPlan(req, res), engine);
+        post("/admin/planes/:id/delete", (req, res) -> controller.procesarEliminarPlan(req, res));
+        get("/admin/planes/:id/materias", (req, res) -> controller.mostrarMateriasDelPlan(req, res), engine);
     }
 }
