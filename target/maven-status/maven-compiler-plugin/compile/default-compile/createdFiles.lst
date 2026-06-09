@@ -8,9 +8,11 @@ com\is1\proyecto\controller\EstudianteController.class
 com\is1\proyecto\models\Situacion.class
 com\is1\proyecto\services\AuditoriaService.class
 com\is1\proyecto\filters\AuthFilter.class
+com\is1\proyecto\controller\DocenteController.class
 com\is1\proyecto\models\Docente.class
 com\is1\proyecto\config\AppConfig.class
 com\is1\proyecto\models\Persona.class
+com\is1\proyecto\routes\DocenteRoutes.class
 com\is1\proyecto\models\Estudiante.class
 com\is1\proyecto\models\InscripcionCarrera.class
 com\is1\proyecto\routes\DashboardRoutes.class

@@ -37,7 +37,6 @@ import spark.Response;
 public class DashboardController {
 
     private static final Logger logger = LoggerFactory.getLogger(DashboardController.class);
-
     private final AuthService authService;
 
     // Constructor

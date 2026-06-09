@@ -5,6 +5,7 @@ C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\filters
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Correlatividad.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\TEstado.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Situacion.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\routes\DocenteRoutes.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\App.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Materia.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\routes\AuthRoutes.java
@@ -23,6 +24,7 @@ C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\controller\AuthController.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\controller\AdminController.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\controller\EstudianteController.java
+C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\controller\DocenteController.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\models\Docente.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\controller\DashboardController.java
 C:\Users\Usuario DPC\Downloads\Grupo8_ISI\src\main\java\com\is1\proyecto\routes\DashboardRoutes.java

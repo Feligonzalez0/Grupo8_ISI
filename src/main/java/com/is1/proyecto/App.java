@@ -9,7 +9,6 @@ import org.javalite.activejdbc.Base; // Clase central de ActiveJDBC para gestion
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.fasterxml.jackson.databind.ObjectMapper; // Representa un modelo de datos y el nombre de la vista a renderizar.
 import com.is1.proyecto.config.*; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.controller.*;
 import com.is1.proyecto.filters.AuthFilter;
@@ -17,15 +16,14 @@ import com.is1.proyecto.models.*;
 import com.is1.proyecto.routes.*;
 import com.is1.proyecto.services.*;
 import spark.ModelAndView;
-import static spark.Spark.before;
 import static spark.Spark.exception;
 import static spark.Spark.get; // Modelo de ActiveJDBC que representa la tabla 'users'.
-import static spark.Spark.halt;
 import static spark.Spark.internalServerError;
 import static spark.Spark.notFound;
 import static spark.Spark.port;
 import static spark.Spark.post;
 import spark.template.mustache.MustacheTemplateEngine;
+
 // mvn clean compile activejdbc-instrumentation:instrument exec:java "-Dexec.mainClass=com.is1.proyecto.App"
 
 /**
@@ -34,24 +32,21 @@ import spark.template.mustache.MustacheTemplateEngine;
  */
 public class App {
 
-    // Instancia estática y final de ObjectMapper para la
-    // serialización/deserialización JSON.
     // Se inicializa una sola vez para ser reutilizada en toda la aplicación.
-    private static final ObjectMapper objectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(App.class);
 
     private static void ejecutarScheme() {
     try {
         String sql = new String(App.class.getClassLoader().getResourceAsStream("scheme.sql").readAllBytes());
         Base.exec(sql);
-        System.out.println("Schema ejecutado correctamente.");
 
+        System.out.println("Schema ejecutado correctamente.");
     } catch (Exception e) {
         System.err.println("Error ejecutando schema.sql");
         e.printStackTrace();
     }
 }
-    
+
     /**
      * Método principal que se ejecuta al iniciar la aplicación.
      * Aquí se configuran todas las rutas y filtros de Spark.
@@ -83,9 +78,13 @@ public class App {
         DashboardController dashboardController = new DashboardController(new AuthService());
         DashboardRoutes.register(dashboardController, engine);
 
-         // --- Rutas Estudiante ---
+        // --- Rutas Estudiante ---
         EstudianteController estudianteController = new EstudianteController();
         EstudianteRoutes.register(estudianteController, engine);
+
+        // --- Rutas Docente ---
+        DocenteController docenteController = new DocenteController();
+        DocenteRoutes.register(docenteController, engine);
 
         // --- Rutas Admin ---
         AdminController adminController = new AdminController(new DocenteService());
@@ -172,7 +171,6 @@ public class App {
             
             // VALIDAR NUMEROS VALIDOS
             Integer dni;
-            Integer codigoProfesor;
             try {
                 dni = Integer.parseInt(dniString);
             } catch (NumberFormatException e) {
@@ -541,7 +539,6 @@ public class App {
             String telefono = req.queryParams("telefono");
             String direccion = req.queryParams("direccion");
             String email = req.queryParams("email");
-            String nroLegajoString = req.queryParams("nro_legajo");
 
             try {
 
@@ -1245,965 +1242,250 @@ public class App {
             logger.warn("Acceso detenido en {}: status {}", req.url(), e.statusCode());
         });
 
-    //! MATERIAS 
-    // GENERAL
-    get("/admin/materias", (req, res) -> {
-        Map<String, Object> model = new HashMap<>();
-        List<Materia> materiasDB = Materia.findAll();
-        List<Map<String, Object>> materias = new ArrayList<>();
-
-        for (Materia m : materiasDB) {
-            Map<String, Object> mv = new HashMap<>();
-            mv.put("codMateria",          m.getCodMateria());
-            mv.put("nombre",      m.getNombre());
-            mv.put("descripcion", m.getDescripcion());
-
-            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", m.getCodPlan());
-            mv.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
-            Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCodCarrera());
-            mv.put("carrera", carrera != null ? carrera.getNombre() : "Sin carrera");
-
-            materias.add(mv);
-        }
-
-        model.put("materias",       materias);
-        model.put("successMessage", req.queryParams("successMessage"));
-        model.put("errorMessage",   req.queryParams("errorMessage"));
-
-        return new ModelAndView(model, "admin/materias/materiasDashboard.mustache");
-    }, new MustacheTemplateEngine());
-
-    // FORMULARIO CREAR
-    get("/admin/materias/agregar", (req, res) -> {
-        Map<String, Object> model = new HashMap<>();
-
-        List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
-        List<Map<String, Object>> planes = new ArrayList<>();
-        for (PlanDeEstudios p : planesDB) {
-            Map<String, Object> pv = new HashMap<>();
-            pv.put("codPlan",    p.getCod());
-            pv.put("nombrePlan", "Plan " + p.getAño());
-            planes.add(pv);
-        }
-
-        model.put("planes",         planes);
-        model.put("sinPlanes",      planes.isEmpty());
-        model.put("errorMessage",   req.queryParams("errorMessage"));
-
-        return new ModelAndView(model, "admin/materias/agregarMateria.mustache");
-    }, new MustacheTemplateEngine());
-
-    // AGREGAR
-    post("/admin/materias/agregar", (req, res) -> {
-        String nombre      = req.queryParams("nombre");
-        String codigo      = req.queryParams("cod_materia");
-        String descripcion = req.queryParams("descripcion");
-        String codPlanStr  = req.queryParams("cod_plan");
-
-        if (nombre == null || nombre.isEmpty() || codigo == null || codigo.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
-            res.redirect("/admin/materias/agregar?errorMessage=Nombre, codigo y plan son obligatorios.");
-            return null;
-        }
-
-        try {
-            int codPlan = Integer.parseInt(codPlanStr);
-            int codMat = Integer.parseInt(codigo);
-
-            Materia materia = new Materia();
-            materia.setNombre(nombre);
-            materia.setDescripcion(descripcion);
-            materia.setCodMateria(codMat);
-            materia.setCodPlan(codPlan);
-            materia.saveIt();
-            AuditoriaService.registrarAuditoria(req, "CREAR_MATERIA", "Nombre: " + nombre);
-
-            res.redirect("/admin/materias?successMessage=Materia creada correctamente.");
-            return null;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            res.redirect("/admin/materias/agregar?errorMessage=Error al crear la materia: " + e.getMessage());
-            return null;
-        }
-    });
-
-    // FORMULARIO EDITAR
-    get("/admin/materias/:id/edit", (req, res) -> {
-        Map<String, Object> model = new HashMap<>();
-        int codMateria = Integer.parseInt(req.params(":id"));
-
-        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
-        if (materia == null) {
-            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
-            return null;
-        }
-
-        List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
-        List<Map<String, Object>> planes = new ArrayList<>();
-        for (PlanDeEstudios p : planesDB) {
-            Map<String, Object> pv = new HashMap<>();
-            pv.put("codPlan",    p.getCod());
-            pv.put("nombrePlan", "Plan " + p.getAño());
-            pv.put("selected",   p.getCod().equals(materia.getCodPlan()));
-            planes.add(pv);
-        }
-
-        model.put("codMateria",   materia.getCodMateria());
-        model.put("nombre",       materia.getNombre());
-        model.put("Codigo",       materia.getCodMateria());
-        model.put("descripcion",  materia.getDescripcion());
-        model.put("planes",       planes);
-        model.put("errorMessage", req.queryParams("errorMessage"));
-
-        return new ModelAndView(model, "admin/materias/editarMateria.mustache");
-    }, new MustacheTemplateEngine());
-
-    // EDITAR
-    post("/admin/materias/:id/edit", (req, res) -> {
-        int codMateria = Integer.parseInt(req.params(":id"));
-
-        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
-        if (materia == null) {
-            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
-            return null;
-        }
-
-        String nombre      = req.queryParams("nombre");
-        String descripcion = req.queryParams("descripcion");
-        String codPlanStr  = req.queryParams("cod_plan");
-
-        if (nombre == null || nombre.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
-            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Nombre, Codigo y Plan son obligatorios.");
-            return null;
-        }
-
-        try {
-            Base.exec(
-                "UPDATE Materia SET nombre = ?, descripcion = ?, cod_plan = ? WHERE cod_materia = ?",
-                nombre, descripcion, Integer.parseInt(codPlanStr), codMateria
-            );
-
-            res.redirect("/admin/materias?successMessage=Materia actualizada correctamente.");
-            return null;
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Error al actualizar: " + e.getMessage());
-            return null;
-        }
-    });
-
-    // CONFIRMAR ELIMINAR
-    get("/admin/materias/:id/delete", (req, res) -> {
-        Map<String, Object> model = new HashMap<>();
-        int codMateria = Integer.parseInt(req.params(":id"));
-
-        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
-        if (materia == null) {
-            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
-            return null;
-        }
-
-        model.put("codMateria",  materia.getCodMateria());
-        model.put("nombre",      materia.getNombre());
-        model.put("descripcion", materia.getDescripcion());
-
-        return new ModelAndView(model, "admin/materias/eliminarMateria.mustache");
-    }, new MustacheTemplateEngine());
-
-    // ELIMINAR
-    post("/admin/materias/:id/delete", (req, res) -> {
-        int codMateria = Integer.parseInt(req.params(":id"));
-
-        Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
-        if (materia == null) {
-            res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
-            return null;
-        }
-
-        try {
-            Base.openTransaction();
-            Base.exec("DELETE FROM PeriodoAcademico WHERE cod_materia = ?", codMateria);
-            Base.exec("DELETE FROM Materia WHERE cod_materia = ?", codMateria);
-            AuditoriaService.registrarAuditoria(req, "ELIMINAR_MATERIA", "Código materia: " + codMateria);
-            Base.commitTransaction();
-
-            res.redirect("/admin/materias?successMessage=Materia eliminada correctamente.");
-            return null;
-
-        } catch (Exception e) {
-            Base.rollbackTransaction();
-            e.printStackTrace();
-            res.redirect("/admin/materias?errorMessage=Error al eliminar la materia.");
-            return null;
-        }
-    });
-
-    // LISTAR
-    get("/admin/materias/listado", (req, res) -> {
-        Map<String, Object> model = new HashMap<>();
-        List<Materia> materiasDB = Materia.findAll();
-        List<Map<String, Object>> materias = new ArrayList<>();
-
-        for(Materia materia : materiasDB){
-            Map<String, Object> materiaView = new HashMap<>();
-
-            materiaView.put("codMateria", materia.getCodMateria());
-            materiaView.put("nombre", materia.getNombre());
-            materiaView.put("descripcion", materia.getDescripcion());
-
-            PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", materia.getCodPlan());
-            materiaView.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
-            Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCodCarrera());
-            materiaView.put("carrera", carrera != null ? carrera.getNombre() : "Sin carrera");
-
-            materias.add(materiaView);
-        }
-
-        model.put("materias", materias);
-        return new ModelAndView(model, "/admin/materias/listadoMaterias.mustache");
-    }, new MustacheTemplateEngine());
-    
-    get("/admin/auditoria", (req, res) -> {
-        Map<String, Object> model = new HashMap<>();
-
-        List<AuditoriaAdmin> logsDB = AuditoriaAdmin.findAll().orderBy("id DESC");
-
-        List<Map<String, Object>> logs = new ArrayList<>();
-        for(AuditoriaAdmin log : logsDB) {
-            Map<String, Object> logView = new HashMap<>();
-            logView.put("usuario", log.getUsuario());
-            logView.put("accion",  log.getAccion());
-            logView.put("detalle", log.getDetalle());
-            logView.put("fecha",   log.getFecha());
-            logs.add(logView);
-        }
-
-        model.put("logs",    logs);
-        model.put("sinLogs", logs.isEmpty());
-
-        return new ModelAndView(model, "admin/adminAuditoria.mustache");
-    }, new MustacheTemplateEngine());
-     registrarRutasDocente();
-    } // Fin del método main
-
-    // HELPERS
-    public static boolean esEmailValido(String email) {
-    String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
-    return email != null && email.matches(regex);
-    }
-    
-private static void registrarRutasDocente() {
- 
-    before("/docente/*", (req, res) -> {
-        Boolean loggedIn = req.session().attribute("loggedIn");
- 
-        if (loggedIn == null || !loggedIn) {
-            res.redirect("/");
-            halt();
-        }
- 
-        String rol = req.session().attribute("userRol");
- 
-        if (!"DOCENTE".equals(rol) && !"ADMINISTRADOR".equals(rol))  {
-            res.redirect("/dashboard");
-            halt();
-        }
-    });
- 
-    get("/docente/examenes/crear", (req, res) -> {
- 
-        Integer userId = req.session().attribute("userId");
-        Docente docente = Docente.findFirst("user_id = ?", userId);
-        System.out.println("codigoProfesor = " + docente.getCodigoProfesor());
- 
-        if (docente == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
-            return null;
-        }
- 
-        // Solo materias donde el docente es Responsable_de_Catedra
-        List<PeriodoAcademico> periodos = PeriodoAcademico.where(
-            "codigo_profesor = ? AND cargo = ?",
-            docente.getCodigoProfesor(), "RESPONSABLE_DE_CATEDRA"
-        );
-        System.out.println("periodos encontrados = " + periodos.size());
-
- 
-        List<Map<String, Object>> materiasView = new ArrayList<>();
-        for (PeriodoAcademico p : periodos) {
-            Materia m = Materia.findFirst("cod_materia = ?", p.getCodMateria());
-            if (m != null) {
-                Map<String, Object> mv = new HashMap<>();
-                mv.put("cod_materia", m.getCodMateria());
-                mv.put("nombre", m.getNombre());
-                materiasView.add(mv);
-            }
-        }
- 
-        Map<String, Object> model = new HashMap<>();
-        model.put("materias", materiasView);
-        if (materiasView.isEmpty()) {
-            model.put("errorMessage", "No tenés materias asignadas como Responsable de Cátedra.");
-        }
- 
-        String error = req.queryParams("errorMessage");
-        if (error != null) model.put("errorMessage", error);
- 
-        return new ModelAndView(model, "docente/crearExamen.mustache");
- 
-    }, new MustacheTemplateEngine());
-
-    post("/docente/examenes/crear", (req, res) -> {
-
-    Integer userId = req.session().attribute("userId");
-    Docente docente = Docente.findFirst("user_id = ?", userId);
-
-    if (docente == null) {
-        res.redirect("/dashboard");
-        return null;
-    }    
-
-    String codMateriaStr = req.queryParams("cod_materia");
-    String fecha         = req.queryParams("fecha");
-
-    if (codMateriaStr == null || codMateriaStr.isEmpty() || fecha == null || fecha.isEmpty()) {
-        res.redirect("/docente/examenes/crear?errorMessage=Todos los campos son obligatorios.");
-        return null;
-    }
-
-    Integer codMateria = Integer.parseInt(codMateriaStr);
-
-    // Verificar que la materia le pertenece al docente como Responsable
-    PeriodoAcademico periodo = PeriodoAcademico.findFirst(
-        "codigo_profesor = ? AND cod_materia = ? AND cargo = ?",
-        docente.getCodigoProfesor(), codMateria, "RESPONSABLE_DE_CATEDRA"
-    );
-    if (periodo == null) {
-        res.redirect("/docente/examenes/crear?errorMessage=No tenés permiso para esa materia.");
-        return null;
-    }
-
-    try {
-        ExamenFinal examen = new ExamenFinal();
-        examen.setCodigoProfesor(docente.getCodigoProfesor());
-        examen.setCodMateria(codMateria);
-        examen.setFecha(fecha);
-        examen.saveIt();
-            AuditoriaService.registrarAuditoria(req, "CREAR_EXAMEN", "codigoProfesor:" + docente.getCodigoProfesor() + " codMateria:" + codMateria + " fecha:" + fecha);
-
-        res.redirect("/dashboard?message=Examen creado correctamente.");
-    } catch (Exception e) {
-        res.redirect("/docente/examenes/crear?errorMessage=Error al crear el examen: " + e.getMessage());
-    }
-    return null;
-});
-
-    get("/docente/alumnos", (req, res) -> {
-        Integer userId = req.session().attribute("userId");
-        Docente docente = Docente.findFirst("user_id = ?", userId);
-
-        if (docente == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
-            return null;
-        }
-
-        // Materias asignadas al docente
-        List<PeriodoAcademico> periodos = PeriodoAcademico.where(
-            "codigo_profesor = ?", docente.getCodigoProfesor()
-        );
-
-        // Armar lista de materias para el filtro
-        List<Map<String, Object>> materiasView = new ArrayList<>();
-        for (PeriodoAcademico p : periodos) {
-            Materia m = Materia.findFirst("cod_materia = ?", p.getCodMateria());
-            if (m != null) {
-                Map<String, Object> mv = new HashMap<>();
-                mv.put("codMateria", m.getCodMateria());
-                mv.put("nombre", m.getNombre());
-                mv.put("fecha", p.getFecha());
-                materiasView.add(mv);
-            }
-        }
-
-        // Filtros opcionales
-        String codMateriaStr = req.queryParams("cod_materia");
-        String fechaFiltro   = req.queryParams("fecha");
-
-        List<Map<String, Object>> alumnosView = new ArrayList<>();
-
-        if (codMateriaStr != null && !codMateriaStr.isEmpty()) {
-            int codMateria = Integer.parseInt(codMateriaStr);
-
-            // Verificar que la materia pertenece al docente
-            PeriodoAcademico perm = PeriodoAcademico.findFirst(
-                "codigo_profesor = ? AND cod_materia = ?",
-                docente.getCodigoProfesor(), codMateria
-            );
-
-            if (perm == null) {
-                res.redirect("/docente/alumnos?errorMessage=No tenés permiso para esa materia.");
-                return null;
-            }
-
-            // Buscar alumnos inscriptos a esa materia
-            List<Estado> estados;
-            if (fechaFiltro != null && !fechaFiltro.isEmpty()) {
-                // Filtrar también por año de la fecha del periodo
-                estados = Estado.where("cod_materia = ?", codMateria);
-                List<Estado> filtrados = new ArrayList<>();
-                for (Estado e : estados) {
-                    PeriodoAcademico pa = PeriodoAcademico.findFirst(
-                        "cod_materia = ? AND codigo_profesor = ? AND fecha LIKE ?",
-                        codMateria, docente.getCodigoProfesor(), fechaFiltro + "%"
-                    );
-                    if (pa != null) filtrados.add(e);
-                }
-                estados = filtrados;
-            } else {
-                estados = Estado.where("cod_materia = ?", codMateria);
-            }
-
-            for (Estado e : estados) {
-                Estudiante estudiante = Estudiante.findFirst("dni = ?", e.getDniEstudiante());
-                Persona persona = Persona.findFirst("dni = ?", e.getDniEstudiante());
-
-                Map<String, Object> av = new HashMap<>();
-                av.put("dni",       e.getDniEstudiante());
-                av.put("nroLegajo", estudiante != null ? estudiante.getNroLegajo() : "-");
-                av.put("nombre",    persona != null ? persona.getNombre() : "");
-                av.put("apellido",  persona != null ? persona.getApellido() : "");
-                av.put("email",     estudiante != null ? estudiante.getEmail() : "");
-                av.put("estado",    e.getString("estado"));
-                av.put("esInscripto", "INSCRIPTO".equals(e.getString("estado")));
-                av.put("codMateria", codMateria); 
-
-                // Badge de color según estado
-                String estadoClass;
-                if ("APROBADO".equals(e.getString("estado"))) {
-                    estadoClass = "bg-green-100 text-green-700";
-                } else if ("REGULAR".equals(e.getString("estado"))) {
-                    estadoClass = "bg-blue-100 text-blue-700";
-                } else if ("LIBRE".equals(e.getString("estado"))) {
-                    estadoClass = "bg-red-100 text-red-700";
-                } else {
-                    estadoClass = "bg-yellow-100 text-yellow-700"; // INSCRIPTO
-                }
-                av.put("estadoClass", estadoClass);
-
-                alumnosView.add(av);
-            }
-            
-    }
-
-        // Fechas únicas para el filtro de período
-        List<String> fechasUnicas = new ArrayList<>();
-        for (PeriodoAcademico p : periodos) {
-            String fecha = p.getFecha();
-            if(fecha != null && fecha.length () >= 4){
-                String anio = p.getFecha().substring(0, 4);
-                if (!fechasUnicas.contains(anio)) {
-                    fechasUnicas.add(anio);
-                }
-            }
-        }
-        List<Map<String, Object>> fechasView = new ArrayList<>();
-        for (String f : fechasUnicas) {
-            Map<String, Object> fv = new HashMap<>();
-            fv.put("fecha", f);
-            fechasView.add(fv);
-        }
-
-        Map<String, Object> model = new HashMap<>();
-        model.put("materias",       materiasView);
-        model.put("sinMaterias",    materiasView.isEmpty());
-        model.put("alumnos",        alumnosView);
-        model.put("sinAlumnos",     alumnosView.isEmpty());
-        model.put("mostrarTabla",   codMateriaStr != null && !codMateriaStr.isEmpty());
-        model.put("fechas",         fechasView);
-        model.put("successMessage", req.queryParams("successMessage"));
-        model.put("errorMessage",   req.queryParams("errorMessage"));
-
-        return new ModelAndView(model, "docente/alumnosInscriptos.mustache");
-
-    }, new MustacheTemplateEngine());
-
-    //! Cargar Notas finales a examentes
-    get("/docente/notas", (req, res) -> {
- 
-        Integer userId = req.session().attribute("userId");
-        Docente docente = Docente.findFirst("user_id = ?", userId);
- 
-        if (docente == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
-            return null;
-        }
- 
-        // Examenes del Docente
-        List<ExamenFinal> examenesDB = ExamenFinal.where(
-            "codigo_profesor = ?", docente.getCodigoProfesor()
-        );
- 
-        // Armar Lista de examenes para el filtro
-        List<Map<String, Object>> examenesView = new ArrayList<>();
-        for (ExamenFinal ex : examenesDB) {
-            Materia mat = Materia.findFirst("cod_materia = ?", ex.getCodMateria());
-            Map<String, Object> ev = new HashMap<>();
-            ev.put("idExamen",      ex.getId());
-            ev.put("nombreMateria", mat != null ? mat.getNombre() : "Sin nombre");
-            ev.put("fecha",         ex.getFecha());
-            examenesView.add(ev);
-        }
- 
-        Map<String, Object> model = new HashMap<>();
-        model.put("examenes",    examenesView);
-        model.put("sinExamenes", examenesView.isEmpty());
- 
-        // Si viene ?id_examen=X cargamos la tabla de alumnos
-        String idExamenStr = req.queryParams("id_examen");
-        if (idExamenStr != null && !idExamenStr.isEmpty()) {
- 
-            int idExamen = Integer.parseInt(idExamenStr);
- 
-            // Marcar el seleccionado en el <select>
-            for (Map<String, Object> ev : examenesView) {
-                ev.put("seleccionado", ev.get("idExamen").equals(idExamen));
-            }
- 
-            ExamenFinal examen = ExamenFinal.findById(idExamen);
- 
-            // Verificar que el examen le pertenece al docente
-            if (examen == null || !examen.getCodigoProfesor().equals(docente.getCodigoProfesor())) {
-                res.redirect("/docente/notas?errorMessage=Examen no encontrado o sin permiso.");
-                return null;
-            }
- 
-            Materia materia = Materia.findFirst("cod_materia = ?", examen.getCodMateria());
- 
-            // Buscar alumnos inscriptos a ese examen
-            List<InscripcionExamen> inscripciones = InscripcionExamen.where("id_examen = ?", idExamen);
- 
-            List<Map<String, Object>> alumnosView = new ArrayList<>();
-            for (InscripcionExamen insc : inscripciones) {
- 
-                Estudiante estudiante = Estudiante.findFirst("dni = ?", insc.getDniEstudiante());
-                Persona    persona    = Persona.findFirst("dni = ?", insc.getDniEstudiante());
- 
-                Estado estadoActual = Estado.findFirst(
-                    "dni_estudiante = ? AND cod_materia = ?",
-                    insc.getDniEstudiante(), examen.getCodMateria()
-                );
- 
-                String estadoStr     = estadoActual != null ? estadoActual.getString("estado") : "REGULAR";
-                boolean yaCalificado = "APROBADO".equals(estadoStr) || "LIBRE".equals(estadoStr);
- 
-                String estadoClass;
-                if ("APROBADO".equals(estadoStr)) {
-                    estadoClass = "bg-green-100 text-green-700";
-                } else if ("LIBRE".equals(estadoStr)) {
-                    estadoClass = "bg-red-100 text-red-700";
-                } else if ("REGULAR".equals(estadoStr)) {
-                    estadoClass = "bg-blue-100 text-blue-700";
-                } else {
-                    estadoClass = "bg-yellow-100 text-yellow-700";
-                }
- 
-                String nombre   = persona != null ? persona.getNombre()   : "";
-                String apellido = persona != null ? persona.getApellido() : "";
-                String iniciales = (
-                    (!nombre.isEmpty()   ? String.valueOf(nombre.charAt(0))   : "") +
-                    (!apellido.isEmpty() ? String.valueOf(apellido.charAt(0)) : "")
-                ).toUpperCase();
- 
-                Map<String, Object> av = new HashMap<>();
-                av.put("dni",          insc.getDniEstudiante());
-                av.put("nombre",       nombre);
-                av.put("apellido",     apellido);
-                av.put("iniciales",    iniciales);
-                av.put("email",        estudiante != null ? estudiante.getEmail()    : "");
-                av.put("nroLegajo",    estudiante != null ? estudiante.getNroLegajo() : "-");
-                av.put("codMateria",   examen.getCodMateria());
-                av.put("idExamen",     idExamen);
-                av.put("estadoActual", estadoStr);
-                av.put("estadoClass",  estadoClass);
-                av.put("yaCalificado", yaCalificado);
- 
-                alumnosView.add(av);
-            }
- 
-            model.put("examenSeleccionado",        true);
-            model.put("nombreMateriaSeleccionada", materia != null ? materia.getNombre() : "Sin nombre");
-            model.put("fechaExamen",               examen.getFecha());
-            model.put("totalAlumnos",              alumnosView.size());
-            model.put("alumnos",                   alumnosView);
-            model.put("sinAlumnos",                alumnosView.isEmpty());
-            model.put("idExamenActual",            idExamen);
-        }
- 
-        model.put("successMessage", req.queryParams("successMessage"));
-        model.put("errorMessage",   req.queryParams("errorMessage"));
- 
-        return new ModelAndView(model, "docente/notasFinales.mustache");
- 
-    }, new MustacheTemplateEngine());
- 
- 
-    // POST: guarda el resultado de un alumno en un examen final
-    post("/docente/notas/cargar", (req, res) -> {
- 
-        Integer userId = req.session().attribute("userId");
-        Docente docente = Docente.findFirst("user_id = ?", userId);
- 
-        if (docente == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
-            return null;
-        }
- 
-        String idExamenStr      = req.queryParams("id_examen");
-        String dniEstudianteStr = req.queryParams("dni_estudiante");
-        String codMateriaStr    = req.queryParams("cod_materia");
-        String resultado        = req.queryParams("resultado");
-        String notaNumero       = req.queryParams("nota_final");
- 
-        // Validaciones básicas
-        if (idExamenStr == null      || idExamenStr.isEmpty()      ||
-            dniEstudianteStr == null || dniEstudianteStr.isEmpty() ||
-            codMateriaStr == null    || codMateriaStr.isEmpty()    ||
-            resultado == null        || resultado.isEmpty()) {
- 
-            res.redirect("/docente/notas?errorMessage=Datos incompletos. Seleccioná un resultado.");
-            return null;
-        }
- 
-        if (!"APROBADO".equals(resultado) && !"LIBRE".equals(resultado)) {
-            res.redirect("/docente/notas?errorMessage=Resultado inválido.");
-            return null;
-        }
- 
-        int idExamen      = Integer.parseInt(idExamenStr);
-        int dniEstudiante = Integer.parseInt(dniEstudianteStr);
-        int codMateria    = Integer.parseInt(codMateriaStr);
- 
-        // Verificar que el examen le pertenece al docente
-        ExamenFinal examen = ExamenFinal.findById(idExamen);
-        if (examen == null || !examen.getCodigoProfesor().equals(docente.getCodigoProfesor())) {
-            res.redirect("/docente/notas?errorMessage=No tenés permiso para ese examen.");
-            return null;
-        }
- 
-        // Verificar que el alumno está inscripto a ese examen
-        InscripcionExamen inscripcion = InscripcionExamen.findFirst(
-            "id_examen = ? AND dni_estudiante = ?", idExamen, dniEstudiante
-        );
-        if (inscripcion == null) {
-            res.redirect("/docente/notas?id_examen=" + idExamen +
-                "&errorMessage=El alumno no está inscripto a ese examen.");
-            return null;
-        }
- 
-        // Verificar que todavía no fue calificado
-        Estado estadoActual = Estado.findFirst(
-            "dni_estudiante = ? AND cod_materia = ?", dniEstudiante, codMateria
-        );
-        if (estadoActual == null) {
-            res.redirect("/docente/notas?id_examen=" + idExamen +
-                "&errorMessage=No se encontró el estado del alumno en esa materia.");
-            return null;
-        }
- 
-        String estadoStr = estadoActual.getString("estado");
-        if ("APROBADO".equals(estadoStr) || "LIBRE".equals(estadoStr)) {
-            res.redirect("/docente/notas?id_examen=" + idExamen +
-                "&errorMessage=El alumno ya tiene un resultado cargado.");
-            return null;
-        }
- 
-        // Actualizar el estado
-        try {
-            Base.openTransaction();
- 
-            Base.exec(
-                "UPDATE Estado SET estado = ? WHERE dni_estudiante = ? AND cod_materia = ?",
-                resultado, dniEstudiante, codMateria
-            );
- 
-            Base.commitTransaction();
- 
-            String msg = "APROBADO".equals(resultado)
-                ? "Alumno aprobado correctamente."
-                : "Resultado libre registrado.";
- 
-             AuditoriaService.registrarAuditoria(req, "CARGAR_NOTA", "idExamen:" + idExamen + " dni:" + dniEstudiante + " resultado:" + resultado); 
-            res.redirect("/docente/notas?id_examen=" + idExamen +
-                "&successMessage=" + java.net.URLEncoder.encode(msg, "UTF-8"));
- 
-        } catch (Exception e) {
-            Base.rollbackTransaction();
-            e.printStackTrace();
-            res.redirect("/docente/notas?id_examen=" + idExamen +
-                "&errorMessage=Error al guardar el resultado: " + e.getMessage());
-        }
- 
-        return null;
-    });
-
-    //!
-    post("/docente/alumnos/estadoCursada", (req, res) -> {
- 
-        Integer userId = req.session().attribute("userId");
-        Docente docente = Docente.findFirst("user_id = ?", userId);
- 
-        if (docente == null) {
-            res.redirect("/dashboard?error=No se encontró el perfil de docente.");
-            return null;
-        }
- 
-        String dniEstudianteStr = req.queryParams("dni_estudiante");
-        String codMateriaStr    = req.queryParams("cod_materia");
-        String nuevoEstado      = req.queryParams("nuevo_estado");
- 
-        // Validaciones básicas
-        if (dniEstudianteStr == null || dniEstudianteStr.isEmpty() ||
-            codMateriaStr == null    || codMateriaStr.isEmpty()    ||
-            nuevoEstado == null      || nuevoEstado.isEmpty()) {
- 
-            res.redirect("/docente/alumnos?errorMessage=Datos incompletos.");
-            return null;
-        }
- 
-        if (!"REGULAR".equals(nuevoEstado) && !"LIBRE".equals(nuevoEstado)) {
-            res.redirect("/docente/alumnos?errorMessage=Estado inválido.");
-            return null;
-        }
- 
-        int dniEstudiante = Integer.parseInt(dniEstudianteStr);
-        int codMateria    = Integer.parseInt(codMateriaStr);
- 
-        // Verificar que la materia le pertenece al docente
-        PeriodoAcademico perm = PeriodoAcademico.findFirst(
-            "codigo_profesor = ? AND cod_materia = ?",
-            docente.getCodigoProfesor(), codMateria
-        );
-        if (perm == null) {
-            res.redirect("/docente/alumnos?errorMessage=No tenés permiso para esa materia.");
-            return null;
-        }
- 
-        // Verificar que el alumno tiene esa materia en INSCRIPTO
-        Estado estadoActual = Estado.findFirst(
-            "dni_estudiante = ? AND cod_materia = ?", dniEstudiante, codMateria
-        );
-        if (estadoActual == null) {
-            res.redirect("/docente/alumnos?errorMessage=No se encontró el estado del alumno en esa materia.");
-            return null;
-        }
- 
-        if (!"INSCRIPTO".equals(estadoActual.getString("estado"))) {
-            res.redirect("/docente/alumnos?errorMessage=Solo se puede cambiar el estado de alumnos INSCRIPTOS.");
-            return null;
-        }
- 
-        try {
-            Base.openTransaction();
- 
-            Base.exec(
-                "UPDATE Estado SET estado = ? WHERE dni_estudiante = ? AND cod_materia = ?",
-                nuevoEstado, dniEstudiante, codMateria
-            );
- 
-            Base.commitTransaction();
- 
-            String msg = "REGULAR".equals(nuevoEstado)
-                ? "Alumno marcado como Regular correctamente."
-                : "Alumno marcado como Libre correctamente.";
- 
-            AuditoriaService.registrarAuditoria(req, "CAMBIAR_ESTADO_CURSADA", "dni:" + dniEstudiante + " codMateria:" + codMateria + " nuevoEstado:" + nuevoEstado); 
-            res.redirect("/docente/alumnos?cod_materia=" + codMateria +
-                "&successMessage=" + java.net.URLEncoder.encode(msg, "UTF-8"));
- 
-        } catch (Exception e) {
-            Base.rollbackTransaction();
-            e.printStackTrace();
-            res.redirect("/docente/alumnos?errorMessage=Error al actualizar el estado: " + e.getMessage());
-        }
- 
-        return null;
-    });
-    //!
-
-        // Configurar carpeta de uploads
-        String uploadDir = "materialEstudio";
-        new java.io.File(uploadDir).mkdirs();
-
-        // GET: ver materiales subidos y formulario
-        get("/docente/material", (req, res) -> {
-            Integer userId = req.session().attribute("userId");
-            Docente docente = Docente.findFirst("user_id = ?", userId);
-
-            if (docente == null) {
-                res.redirect("/dashboard?error=No se encontró el perfil de docente.");
-                return null;
-            }
-
-            // Materias del docente
-            List<PeriodoAcademico> periodos = PeriodoAcademico.where(
-                "codigo_profesor = ?", docente.getCodigoProfesor()
-            );
-            List<Map<String, Object>> materiasView = new ArrayList<>();
-            for (PeriodoAcademico p : periodos) {
-                Materia m = Materia.findFirst("cod_materia = ?", p.getCodMateria());
-                if (m != null) {
-                    Map<String, Object> mv = new HashMap<>();
-                    mv.put("codMateria", m.getCodMateria());
-                    mv.put("nombre",     m.getNombre());
-                    materiasView.add(mv);
-                }
-            }
-
-            // Materiales ya subidos
-            List<MaterialEstudio> materialesDB = MaterialEstudio.where(
-                "codigo_profesor = ?", docente.getCodigoProfesor()
-            );
-            List<Map<String, Object>> materiales = new ArrayList<>();
-            for (MaterialEstudio mat : materialesDB) {
-                Materia m = Materia.findFirst("cod_materia = ?", mat.getCodMateria());
-                Map<String, Object> mv = new HashMap<>();
-                mv.put("id",            mat.getId());
-                mv.put("nombre",        mat.getNombre());
-                mv.put("descripcion",   mat.getDescripcion());
-                mv.put("nombreArchivo", mat.getNombreArchivo());
-                mv.put("fechaSubida",   mat.getFechaSubida());
-                mv.put("nombreMateria", m != null ? m.getNombre() : "Sin materia");
-                mv.put("idDescarga",    mat.getId());
-                materiales.add(mv);
-            }
-
+        //! MATERIAS 
+        // GENERAL
+        get("/admin/materias", (req, res) -> {
             Map<String, Object> model = new HashMap<>();
-            model.put("materias",       materiasView);
-            model.put("sinMaterias",    materiasView.isEmpty());
-            model.put("materiales",     materiales);
-            model.put("sinMateriales",  materiales.isEmpty());
+            List<Materia> materiasDB = Materia.findAll();
+            List<Map<String, Object>> materias = new ArrayList<>();
+
+            for (Materia m : materiasDB) {
+                Map<String, Object> mv = new HashMap<>();
+                mv.put("codMateria",          m.getCodMateria());
+                mv.put("nombre",      m.getNombre());
+                mv.put("descripcion", m.getDescripcion());
+
+                PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", m.getCodPlan());
+                mv.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
+                Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCodCarrera());
+                mv.put("carrera", carrera != null ? carrera.getNombre() : "Sin carrera");
+
+                materias.add(mv);
+            }
+
+            model.put("materias",       materias);
             model.put("successMessage", req.queryParams("successMessage"));
             model.put("errorMessage",   req.queryParams("errorMessage"));
 
-            return new ModelAndView(model, "docente/materialEstudio.mustache");
-
+            return new ModelAndView(model, "admin/materias/materiasDashboard.mustache");
         }, new MustacheTemplateEngine());
 
-        // POST: subir archivo
-        post("/docente/material/subir", (req, res) -> {
-            Integer userId = req.session().attribute("userId");
-            Docente docente = Docente.findFirst("user_id = ?", userId);
+        // FORMULARIO CREAR
+        get("/admin/materias/agregar", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
 
-            if (docente == null) {
-                res.redirect("/dashboard");
+            List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
+            List<Map<String, Object>> planes = new ArrayList<>();
+            for (PlanDeEstudios p : planesDB) {
+                Map<String, Object> pv = new HashMap<>();
+                pv.put("codPlan",    p.getCod());
+                pv.put("nombrePlan", "Plan " + p.getAño());
+                planes.add(pv);
+            }
+
+            model.put("planes",         planes);
+            model.put("sinPlanes",      planes.isEmpty());
+            model.put("errorMessage",   req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/materias/agregarMateria.mustache");
+        }, new MustacheTemplateEngine());
+
+        // AGREGAR
+        post("/admin/materias/agregar", (req, res) -> {
+            String nombre      = req.queryParams("nombre");
+            String codigo      = req.queryParams("cod_materia");
+            String descripcion = req.queryParams("descripcion");
+            String codPlanStr  = req.queryParams("cod_plan");
+
+            if (nombre == null || nombre.isEmpty() || codigo == null || codigo.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
+                res.redirect("/admin/materias/agregar?errorMessage=Nombre, codigo y plan son obligatorios.");
                 return null;
             }
 
-            // Habilitar multipart
-            req.attribute("org.eclipse.jetty.multipartConfig",
-                new javax.servlet.MultipartConfigElement("materialEstudio"));
-
             try {
-                // Leer campos del form
-                String nombre      = req.raw().getPart("nombre") != null
-                    ? new String(req.raw().getPart("nombre").getInputStream().readAllBytes())
-                    : "";
-                String descripcion = req.raw().getPart("descripcion") != null
-                    ? new String(req.raw().getPart("descripcion").getInputStream().readAllBytes())
-                    : "";
-                String codMateriaStr = req.raw().getPart("cod_materia") != null
-                    ? new String(req.raw().getPart("cod_materia").getInputStream().readAllBytes())
-                    : "";
+                int codPlan = Integer.parseInt(codPlanStr);
+                int codMat = Integer.parseInt(codigo);
 
-                javax.servlet.http.Part filePart = req.raw().getPart("archivo");
+                Materia materia = new Materia();
+                materia.setNombre(nombre);
+                materia.setDescripcion(descripcion);
+                materia.setCodMateria(codMat);
+                materia.setCodPlan(codPlan);
+                materia.saveIt();
+                AuditoriaService.registrarAuditoria(req, "CREAR_MATERIA", "Nombre: " + nombre);
 
-                if (nombre.isEmpty() || codMateriaStr.isEmpty() || filePart == null || filePart.getSize() == 0) {
-                    res.redirect("/docente/material?errorMessage=Todos los campos son obligatorios.");
-                    return null;
-                }
-
-                // Validar formato
-                String nombreArchivo = filePart.getSubmittedFileName();
-                String extension = nombreArchivo.substring(nombreArchivo.lastIndexOf(".") + 1).toLowerCase();
-                List<String> formatosPermitidos = List.of("pdf", "doc", "docx", "ppt", "pptx", "xls", "xlsx", "jpg", "png");
-
-                if (!formatosPermitidos.contains(extension)) {
-                    res.redirect("/docente/material?errorMessage=Formato no permitido. Usá: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, JPG, PNG.");
-                    return null;
-                }
-
-                // Verificar que la materia pertenece al docente
-                int codMateria = Integer.parseInt(codMateriaStr);
-                PeriodoAcademico perm = PeriodoAcademico.findFirst(
-                    "codigo_profesor = ? AND cod_materia = ?",
-                    docente.getCodigoProfesor(), codMateria
-                );
-                if (perm == null) {
-                    res.redirect("/docente/material?errorMessage=No tenés permiso para esa materia.");
-                    return null;
-                }
-
-                // Guardar archivo con nombre único
-                String nombreUnico = System.currentTimeMillis() + "_" + nombreArchivo;
-                String rutaArchivo = uploadDir + "/" + nombreUnico;
-
-                try (java.io.InputStream input = filePart.getInputStream();
-                    java.io.FileOutputStream output = new java.io.FileOutputStream(rutaArchivo)) {
-                    input.transferTo(output);
-                }
-
-                // Guardar en DB
-                String fecha = java.time.LocalDate.now().toString();
-                MaterialEstudio material = new MaterialEstudio();
-                material.setCodMateria(codMateria);
-                material.setCodigoProfesor(docente.getCodigoProfesor());
-                material.setNombre(nombre);
-                material.setDescripcion(descripcion);
-                material.setNombreArchivo(nombreArchivo);
-                material.setRutaArchivo(rutaArchivo);
-                material.setFechaSubida(fecha);
-                material.saveIt();
-
-                AuditoriaService.registrarAuditoria(req, "SUBIR_MATERIAL", "codigoProfesor:" + docente.getCodigoProfesor() + " idMaterial:" + material.getId() + " nombre:" + nombre); 
-                res.redirect("/docente/material?successMessage=Material subido correctamente.");
+                res.redirect("/admin/materias?successMessage=Materia creada correctamente.");
+                return null;
 
             } catch (Exception e) {
                 e.printStackTrace();
-                res.redirect("/docente/material?errorMessage=Error al subir el archivo: " + e.getMessage());
+                res.redirect("/admin/materias/agregar?errorMessage=Error al crear la materia: " + e.getMessage());
+                return null;
             }
-
-            return null;
         });
 
-        // GET: descargar archivo
-        get("/material/descargar/:id", (req, res) -> {
-            Integer id = Integer.parseInt(req.params(":id"));
-            MaterialEstudio material = MaterialEstudio.findById(id);
+        // FORMULARIO EDITAR
+        get("/admin/materias/:id/edit", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            int codMateria = Integer.parseInt(req.params(":id"));
 
-            if (material == null) {
-                res.redirect("/dashboard?error=Material no encontrado.");
+            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+            if (materia == null) {
+                res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
                 return null;
             }
 
-            java.io.File archivo = new java.io.File(material.getRutaArchivo());
-            if (!archivo.exists()) {
-                res.redirect("/dashboard?error=El archivo no existe en el servidor.");
+            List<PlanDeEstudios> planesDB = PlanDeEstudios.findAll();
+            List<Map<String, Object>> planes = new ArrayList<>();
+            for (PlanDeEstudios p : planesDB) {
+                Map<String, Object> pv = new HashMap<>();
+                pv.put("codPlan",    p.getCod());
+                pv.put("nombrePlan", "Plan " + p.getAño());
+                pv.put("selected",   p.getCod().equals(materia.getCodPlan()));
+                planes.add(pv);
+            }
+
+            model.put("codMateria",   materia.getCodMateria());
+            model.put("nombre",       materia.getNombre());
+            model.put("Codigo",       materia.getCodMateria());
+            model.put("descripcion",  materia.getDescripcion());
+            model.put("planes",       planes);
+            model.put("errorMessage", req.queryParams("errorMessage"));
+
+            return new ModelAndView(model, "admin/materias/editarMateria.mustache");
+        }, new MustacheTemplateEngine());
+
+        // EDITAR
+        post("/admin/materias/:id/edit", (req, res) -> {
+            int codMateria = Integer.parseInt(req.params(":id"));
+
+            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+            if (materia == null) {
+                res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
                 return null;
             }
 
-            res.raw().setContentType("application/octet-stream");
-            res.raw().setHeader("Content-Disposition", "attachment; filename=\"" + material.getNombreArchivo() + "\"");
+            String nombre      = req.queryParams("nombre");
+            String descripcion = req.queryParams("descripcion");
+            String codPlanStr  = req.queryParams("cod_plan");
 
-            try (java.io.InputStream is = new java.io.FileInputStream(archivo);
-                java.io.OutputStream os = res.raw().getOutputStream()) {
-                is.transferTo(os);
-                os.flush();
+            if (nombre == null || nombre.isEmpty() || codPlanStr == null || codPlanStr.isEmpty()) {
+                res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Nombre, Codigo y Plan son obligatorios.");
+                return null;
             }
-            AuditoriaService.registrarAuditoria(req, "DESCARGAR_MATERIAL", "idMaterial:" + material.getId() + " nombre:" + material.getNombreArchivo());
 
-            return null;
+            try {
+                Base.exec(
+                    "UPDATE Materia SET nombre = ?, descripcion = ?, cod_plan = ? WHERE cod_materia = ?",
+                    nombre, descripcion, Integer.parseInt(codPlanStr), codMateria
+                );
+
+                res.redirect("/admin/materias?successMessage=Materia actualizada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                e.printStackTrace();
+                res.redirect("/admin/materias/" + codMateria + "/edit?errorMessage=Error al actualizar: " + e.getMessage());
+                return null;
+            }
         });
 
-    }
+        // CONFIRMAR ELIMINAR
+        get("/admin/materias/:id/delete", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            int codMateria = Integer.parseInt(req.params(":id"));
+
+            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+            if (materia == null) {
+                res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+                return null;
+            }
+
+            model.put("codMateria",  materia.getCodMateria());
+            model.put("nombre",      materia.getNombre());
+            model.put("descripcion", materia.getDescripcion());
+
+            return new ModelAndView(model, "admin/materias/eliminarMateria.mustache");
+        }, new MustacheTemplateEngine());
+
+        // ELIMINAR
+        post("/admin/materias/:id/delete", (req, res) -> {
+            int codMateria = Integer.parseInt(req.params(":id"));
+
+            Materia materia = Materia.findFirst("cod_materia = ?", codMateria);
+            if (materia == null) {
+                res.redirect("/admin/materias?errorMessage=Materia no encontrada.");
+                return null;
+            }
+
+            try {
+                Base.openTransaction();
+                Base.exec("DELETE FROM PeriodoAcademico WHERE cod_materia = ?", codMateria);
+                Base.exec("DELETE FROM Materia WHERE cod_materia = ?", codMateria);
+                AuditoriaService.registrarAuditoria(req, "ELIMINAR_MATERIA", "Código materia: " + codMateria);
+                Base.commitTransaction();
+
+                res.redirect("/admin/materias?successMessage=Materia eliminada correctamente.");
+                return null;
+
+            } catch (Exception e) {
+                Base.rollbackTransaction();
+                e.printStackTrace();
+                res.redirect("/admin/materias?errorMessage=Error al eliminar la materia.");
+                return null;
+            }
+        });
+
+        // LISTAR
+        get("/admin/materias/listado", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+            List<Materia> materiasDB = Materia.findAll();
+            List<Map<String, Object>> materias = new ArrayList<>();
+
+            for(Materia materia : materiasDB){
+                Map<String, Object> materiaView = new HashMap<>();
+
+                materiaView.put("codMateria", materia.getCodMateria());
+                materiaView.put("nombre", materia.getNombre());
+                materiaView.put("descripcion", materia.getDescripcion());
+
+                PlanDeEstudios plan = PlanDeEstudios.findFirst("cod_plan = ?", materia.getCodPlan());
+                materiaView.put("nombrePlan", plan != null ? "Plan " + plan.getAño() : "Sin plan");
+                Carrera carrera = Carrera.findFirst("cod_carrera = ?", plan.getCodCarrera());
+                materiaView.put("carrera", carrera != null ? carrera.getNombre() : "Sin carrera");
+
+                materias.add(materiaView);
+            }
+
+            model.put("materias", materias);
+            return new ModelAndView(model, "/admin/materias/listadoMaterias.mustache");
+        }, new MustacheTemplateEngine());
+        
+        get("/admin/auditoria", (req, res) -> {
+            Map<String, Object> model = new HashMap<>();
+
+            List<AuditoriaAdmin> logsDB = AuditoriaAdmin.findAll().orderBy("id DESC");
+
+            List<Map<String, Object>> logs = new ArrayList<>();
+            for(AuditoriaAdmin log : logsDB) {
+                Map<String, Object> logView = new HashMap<>();
+                logView.put("usuario", log.getUsuario());
+                logView.put("accion",  log.getAccion());
+                logView.put("detalle", log.getDetalle());
+                logView.put("fecha",   log.getFecha());
+                logs.add(logView);
+            }
+
+            model.put("logs",    logs);
+            model.put("sinLogs", logs.isEmpty());
+
+            return new ModelAndView(model, "admin/adminAuditoria.mustache");
+        }, new MustacheTemplateEngine());
+        } // Fin del método main
+
+        // HELPERS
+        public static boolean esEmailValido(String email) {
+            String regex = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
+            return email != null && email.matches(regex);
+        }
 } // Fin de la clase App
