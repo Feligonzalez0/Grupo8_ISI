@@ -30,7 +30,7 @@ public class AuthController {
     private final AuthService authService;
 
     public AuthController(AuthService authService) {
-        this.authService      = authService;
+        this.authService = authService;
     }
 
     // GET /  —  Mostrar formulario de login
@@ -44,7 +44,7 @@ public class AuthController {
 
     // POST /login  —  Procesar formulario de login
     public ModelAndView procesarLogin(Request req, Response res) {
-        String username          = req.queryParams("username");
+        String username = req.queryParams("username");
         String plainTextPassword = req.queryParams("password");
 
         Map<String, Object> model = new HashMap<>();
@@ -55,8 +55,8 @@ public class AuthController {
 
             // --- Login exitoso: poblar sesión ---
             req.session(true).attribute("currentUserUsername", usuario.getString("name"));
-            req.session().attribute("userId",   usuario.getId());
-            req.session().attribute("userRol",  usuario.getRol());
+            req.session().attribute("userId", usuario.getId());
+            req.session().attribute("userRol", usuario.getRol());
             req.session().attribute("loggedIn", true);
 
             logger.debug("Sesión iniciada. ID de sesión: {}", req.session().id());
@@ -99,7 +99,7 @@ public class AuthController {
 
     // POST /user/new  —  Procesar formulario de registro
     public String procesarRegistro(Request req, Response res) {
-        String name     = req.queryParams("name");
+        String name = req.queryParams("name");
         String password = req.queryParams("password");
 
         try {
@@ -125,12 +125,12 @@ public class AuthController {
     }
 
     // HELPER PRIVADO
-    private void agregarMensajes(Request req, Map<String, Object> model,
-                                  String errorParam, String successParam) {
-        String error   = req.queryParams(errorParam);
+    private void agregarMensajes(Request req, Map<String, Object> model, String errorParam, String successParam) 
+    {
+        String error = req.queryParams(errorParam);
         String success = req.queryParams(successParam);
 
-        if (error   != null && !error.trim().isEmpty())   model.put("errorMessage",   error);
+        if (error != null && !error.trim().isEmpty()) model.put("errorMessage", error);
         if (success != null && !success.trim().isEmpty()) model.put("successMessage", success);
     }
 }

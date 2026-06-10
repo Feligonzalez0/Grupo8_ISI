@@ -45,7 +45,7 @@ public class DocenteAlumnosController {
         }
 
         String codMateriaStr = req.queryParams("cod_materia");
-        String fechaFiltro   = req.queryParams("fecha");
+        String fechaFiltro = req.queryParams("fecha");
         List<Map<String, Object>> alumnosView = new ArrayList<>();
 
         if(codMateriaStr != null && !codMateriaStr.isEmpty()) {
@@ -71,21 +71,26 @@ public class DocenteAlumnosController {
 
             for(Estado e : estados) {
                 Estudiante estudiante = Estudiante.findFirst("dni = ?", e.getDniEstudiante());
-                Persona persona       = Persona.findFirst("dni = ?", e.getDniEstudiante());
+                Persona persona  = Persona.findFirst("dni = ?", e.getDniEstudiante());
                 String estadoStr = e.getString("estado");
                 String estadoClass;
-                if("APROBADO".equals(estadoStr))     estadoClass = "bg-green-100 text-green-700";
-                else if("REGULAR".equals(estadoStr)) estadoClass = "bg-blue-100 text-blue-700";
-                else if("LIBRE".equals(estadoStr))   estadoClass = "bg-red-100 text-red-700";
-                else                                 estadoClass = "bg-yellow-100 text-yellow-700";
+                if ("APROBADO".equals(estadoStr)) {
+                    estadoClass = "bg-green-100 text-green-700";
+                } else if ("REGULAR".equals(estadoStr)) {
+                    estadoClass = "bg-blue-100 text-blue-700";
+                } else if ("LIBRE".equals(estadoStr)) {
+                    estadoClass = "bg-red-100 text-red-700";
+                } else {
+                    estadoClass = "bg-yellow-100 text-yellow-700";
+                }
 
                 Map<String, Object> av = new HashMap<>();
-                av.put("dni",        e.getDniEstudiante());
+                av.put("dni", e.getDniEstudiante());
                 av.put("nroLegajo",  estudiante != null ? estudiante.getNroLegajo() : "-");
-                av.put("nombre",     persona    != null ? persona.getNombre()       : "");
-                av.put("apellido",   persona    != null ? persona.getApellido()     : "");
-                av.put("email",      estudiante != null ? estudiante.getEmail()     : "");
-                av.put("estado",     estadoStr);
+                av.put("nombre", persona != null ? persona.getNombre() : "");
+                av.put("apellido", persona != null ? persona.getApellido() : "");
+                av.put("email", estudiante != null ? estudiante.getEmail() : "");
+                av.put("estado", estadoStr);
                 av.put("esInscripto","INSCRIPTO".equals(estadoStr));
                 av.put("codMateria", codMateria);
                 av.put("estadoClass",estadoClass);
@@ -109,14 +114,14 @@ public class DocenteAlumnosController {
         }
 
         Map<String, Object> model = new HashMap<>();
-        model.put("materias",     materiasView);
-        model.put("sinMaterias",  materiasView.isEmpty());
-        model.put("alumnos",      alumnosView);
-        model.put("sinAlumnos",   alumnosView.isEmpty());
+        model.put("materias", materiasView);
+        model.put("sinMaterias", materiasView.isEmpty());
+        model.put("alumnos", alumnosView);
+        model.put("sinAlumnos", alumnosView.isEmpty());
         model.put("mostrarTabla", codMateriaStr != null && !codMateriaStr.isEmpty());
-        model.put("fechas",       fechasView);
+        model.put("fechas", fechasView);
         model.put("successMessage", req.queryParams("successMessage"));
-        model.put("errorMessage",   req.queryParams("errorMessage"));
+        model.put("errorMessage", req.queryParams("errorMessage"));
 
         return new ModelAndView(model, "docente/alumnosInscriptos.mustache");
     }
@@ -128,12 +133,12 @@ public class DocenteAlumnosController {
         if(docente == null) { res.redirect("/dashboard?error=No se encontró el perfil de docente."); return null; }
 
         String dniEstudianteStr = req.queryParams("dni_estudiante");
-        String codMateriaStr    = req.queryParams("cod_materia");
-        String nuevoEstado      = req.queryParams("nuevo_estado");
+        String codMateriaStr = req.queryParams("cod_materia");
+        String nuevoEstado = req.queryParams("nuevo_estado");
 
         if(dniEstudianteStr == null || dniEstudianteStr.isEmpty()
-        || codMateriaStr == null    || codMateriaStr.isEmpty()
-        || nuevoEstado == null      || nuevoEstado.isEmpty()) {
+        || codMateriaStr == null || codMateriaStr.isEmpty()
+        || nuevoEstado == null || nuevoEstado.isEmpty()) {
             res.redirect("/docente/alumnos?errorMessage=Datos incompletos."); return null;
         }
         if(!"REGULAR".equals(nuevoEstado) && !"LIBRE".equals(nuevoEstado)) {
@@ -141,11 +146,13 @@ public class DocenteAlumnosController {
         }
 
         int dniEstudiante = Integer.parseInt(dniEstudianteStr);
-        int codMateria    = Integer.parseInt(codMateriaStr);
+        int codMateria = Integer.parseInt(codMateriaStr);
 
         PeriodoAcademico perm = PeriodoAcademico.findFirst(
             "codigo_profesor = ? AND cod_materia = ?", docente.getCodigoProfesor(), codMateria);
-        if(perm == null) { res.redirect("/docente/alumnos?errorMessage=No tenés permiso para esa materia."); return null; }
+        if(perm == null) {
+             res.redirect("/docente/alumnos?errorMessage=No tenés permiso para esa materia."); return null; 
+        }
 
         Estado estadoActual = Estado.findFirst("dni_estudiante = ? AND cod_materia = ?", dniEstudiante, codMateria);
         if(estadoActual == null) { res.redirect("/docente/alumnos?errorMessage=No se encontró el estado del alumno."); return null; }

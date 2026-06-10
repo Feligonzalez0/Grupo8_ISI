@@ -1,8 +1,16 @@
 package com.is1.proyecto.controller.DocenteController;
 
-import java.util.*;
-import com.is1.proyecto.models.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import com.is1.proyecto.models.Docente;
+import com.is1.proyecto.models.Materia;
+import com.is1.proyecto.models.MaterialEstudio;
+import com.is1.proyecto.models.PeriodoAcademico;
 import com.is1.proyecto.services.AuditoriaService;
+
 import spark.ModelAndView;
 import spark.Request;
 import spark.Response;
@@ -28,7 +36,7 @@ public class DocenteMaterialController {
             if(m != null) {
                 Map<String, Object> mv = new HashMap<>();
                 mv.put("codMateria", m.getCodMateria());
-                mv.put("nombre",     m.getNombre());
+                mv.put("nombre", m.getNombre());
                 materiasView.add(mv);
             }
         }
@@ -38,23 +46,23 @@ public class DocenteMaterialController {
         for(MaterialEstudio mat : materialesDB) {
             Materia m = Materia.findFirst("cod_materia = ?", mat.getCodMateria());
             Map<String, Object> mv = new HashMap<>();
-            mv.put("id",            mat.getId());
-            mv.put("nombre",        mat.getNombre());
-            mv.put("descripcion",   mat.getDescripcion());
+            mv.put("id", mat.getId());
+            mv.put("nombre", mat.getNombre());
+            mv.put("descripcion", mat.getDescripcion());
             mv.put("nombreArchivo", mat.getNombreArchivo());
-            mv.put("fechaSubida",   mat.getFechaSubida());
+            mv.put("fechaSubida", mat.getFechaSubida());
             mv.put("nombreMateria", m != null ? m.getNombre() : "Sin materia");
-            mv.put("idDescarga",    mat.getId());
+            mv.put("idDescarga", mat.getId());
             materiales.add(mv);
         }
 
         Map<String, Object> model = new HashMap<>();
-        model.put("materias",       materiasView);
-        model.put("sinMaterias",    materiasView.isEmpty());
-        model.put("materiales",     materiales);
-        model.put("sinMateriales",  materiales.isEmpty());
+        model.put("materias", materiasView);
+        model.put("sinMaterias", materiasView.isEmpty());
+        model.put("materiales", materiales);
+        model.put("sinMateriales", materiales.isEmpty());
         model.put("successMessage", req.queryParams("successMessage"));
-        model.put("errorMessage",   req.queryParams("errorMessage"));
+        model.put("errorMessage", req.queryParams("errorMessage"));
         return new ModelAndView(model, "docente/materialEstudio.mustache");
     }
 
@@ -67,7 +75,7 @@ public class DocenteMaterialController {
         req.attribute("org.eclipse.jetty.multipartConfig", new javax.servlet.MultipartConfigElement(UPLOAD_DIR));
 
         try {
-            String nombre       = req.raw().getPart("nombre")      != null ? new String(req.raw().getPart("nombre").getInputStream().readAllBytes())      : "";
+            String nombre = req.raw().getPart("nombre") != null ? new String(req.raw().getPart("nombre").getInputStream().readAllBytes()) : "";
             String descripcion  = req.raw().getPart("descripcion") != null ? new String(req.raw().getPart("descripcion").getInputStream().readAllBytes()) : "";
             String codMateriaStr= req.raw().getPart("cod_materia") != null ? new String(req.raw().getPart("cod_materia").getInputStream().readAllBytes()) : "";
             javax.servlet.http.Part filePart = req.raw().getPart("archivo");
@@ -85,7 +93,9 @@ public class DocenteMaterialController {
             int codMateria = Integer.parseInt(codMateriaStr);
             PeriodoAcademico perm = PeriodoAcademico.findFirst(
                 "codigo_profesor = ? AND cod_materia = ?", docente.getCodigoProfesor(), codMateria);
-            if(perm == null) { res.redirect("/docente/material?errorMessage=No tenés permiso para esa materia."); return null; }
+            if(perm == null) { 
+                res.redirect("/docente/material?errorMessage=No tenés permiso para esa materia."); return null; 
+            }
 
             String rutaArchivo = UPLOAD_DIR + "/" + System.currentTimeMillis() + "_" + nombreArchivo;
             try (java.io.InputStream input = filePart.getInputStream();
@@ -117,7 +127,9 @@ public class DocenteMaterialController {
     public Object handleDescargarMaterial(Request req, Response res) {
         Integer id = Integer.parseInt(req.params(":id"));
         MaterialEstudio material = MaterialEstudio.findById(id);
-        if(material == null) { res.redirect("/dashboard?error=Material no encontrado."); return null; }
+        if(material == null) {
+             res.redirect("/dashboard?error=Material no encontrado."); return null; 
+        }
 
         java.io.File archivo = new java.io.File(material.getRutaArchivo());
         if(!archivo.exists()) { res.redirect("/dashboard?error=El archivo no existe en el servidor."); return null; }

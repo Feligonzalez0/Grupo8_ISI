@@ -42,11 +42,15 @@ public class DocenteExamenController {
 
         Map<String, Object> model = new HashMap<>();
         model.put("materias", materiasView);
-        if(materiasView.isEmpty())
+        if (materiasView.isEmpty()) {
             model.put("errorMessage", "No tenés materias asignadas como Responsable de Cátedra.");
+        }
 
         String error = req.queryParams("errorMessage");
-        if(error != null) model.put("errorMessage", error);
+        if(error != null) {
+            model.put("errorMessage", error);
+        }
+            
 
         return new ModelAndView(model, "docente/crearExamen.mustache");
     }
@@ -55,7 +59,9 @@ public class DocenteExamenController {
     public Object handleCrearExamen(Request req, Response res) {
         Integer userId = req.session().attribute("userId");
         Docente docente = Docente.findFirst("user_id = ?", userId);
-        if(docente == null) { res.redirect("/dashboard"); return null; }
+        if(docente == null) { 
+            res.redirect("/dashboard"); return null; 
+        }
 
         String codMateriaStr = req.queryParams("cod_materia");
         String fecha = req.queryParams("fecha");

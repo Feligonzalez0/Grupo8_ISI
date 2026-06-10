@@ -1,21 +1,36 @@
 package com.is1.proyecto.routes;
-import com.is1.proyecto.controller.EstudianteController;
-import spark.template.mustache.MustacheTemplateEngine;
+
+import com.is1.proyecto.controller.EstudianteController.EstudianteAvanceController;
+import com.is1.proyecto.controller.EstudianteController.EstudianteCarreraController;
+import com.is1.proyecto.controller.EstudianteController.EstudianteDashboardController;
+import com.is1.proyecto.controller.EstudianteController.EstudianteExamenController;
+import com.is1.proyecto.controller.EstudianteController.EstudianteInscripcionController;
+import com.is1.proyecto.controller.EstudianteController.EstudianteMaterialController;
+            
 import static spark.Spark.get;
 import static spark.Spark.post;
+import spark.template.mustache.MustacheTemplateEngine;
 
-public class EstudianteRoutes {
-    public static void register(EstudianteController controller, MustacheTemplateEngine engine) {
+public class EstudianteRoutes 
+{
 
-        get("/estudiante/dashboard", (req, res) -> controller.showDashboard(req, res), engine);
-        get("/estudiante/inscripcion", (req, res) -> controller.showInscripcion(req, res), engine);
-        post("/estudiante/inscripcion", (req, res) -> controller.handleInscripcion(req, res));
-        get("/estudiante/examenes", (req, res) -> controller.showExamenes(req, res), engine);
-        post("/estudiante/examenes/:id/inscribir", (req, res) -> controller.handleInscribirExamen(req, res));
-        get("/estudiante/carrera", (req, res) -> controller.showCarrera(req, res), engine);
-        post("/estudiante/carrera/inscribir", (req, res) -> controller.handleInscribirCarrera(req, res));
-        get("/estudiante/avance", (req, res) -> controller.showAvance(req, res), engine);
-        get("/estudiante/material", (req, res) -> controller.showMaterial(req, res), engine);
+    public static void register(MustacheTemplateEngine engine) 
+    {
+        EstudianteDashboardController dashboard = new EstudianteDashboardController();
+        EstudianteInscripcionController inscripcion = new EstudianteInscripcionController();
+        EstudianteCarreraController carrera = new EstudianteCarreraController();
+        EstudianteAvanceController avance = new EstudianteAvanceController();
+        EstudianteExamenController examenes = new EstudianteExamenController();
+        EstudianteMaterialController material = new EstudianteMaterialController();
 
+        get("/estudiante/dashboard", dashboard::showDashboard, engine);
+        get("/estudiante/inscripcion", inscripcion::showInscripcion, engine);
+        post("/estudiante/inscripcion", inscripcion::handleInscripcion);
+        get("/estudiante/carrera", carrera::showCarrera, engine);
+        post("/estudiante/carrera/inscribir", carrera::handleInscribirCarrera);
+        get("/estudiante/avance", avance::showAvance, engine);
+        get("/estudiante/examenes", examenes::showExamenes, engine);
+        post("/estudiante/examenes/:id/inscribir",examenes::handleInscribirExamen);
+        get("/estudiante/material", material::showMaterial, engine);
     }
 }

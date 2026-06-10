@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import com.is1.proyecto.config.DBConfigSingleton; // Motor de plantillas Mustache para Spark.
 import com.is1.proyecto.controller.AuthController;
 import com.is1.proyecto.controller.DashboardController;
-import com.is1.proyecto.controller.EstudianteController;
 import com.is1.proyecto.filters.AuthFilter;
 import com.is1.proyecto.routes.AdminRoutes;
 import com.is1.proyecto.routes.AuthRoutes;
@@ -74,7 +73,7 @@ public class App {
 
         // --- Rutas ---
         DashboardRoutes.register(new DashboardController(new AuthService()), engine);
-        EstudianteRoutes.register(new EstudianteController(), engine);
+        EstudianteRoutes.register(engine);
         DocenteRoutes.register(engine);
         AdminRoutes.register(engine);
 
